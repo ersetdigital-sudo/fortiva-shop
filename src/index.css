@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* Explicit Tailwind v4 source detection for the Next.js `src` tree */
+@source "./app";
+@source "./components";
+@source "./views";
+@source "./data";
+@source "./services";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-brand-red: #F2352B;
+  --color-brand-red-hover: #DC2626;
+  --color-brand-blue: #245BE8;
+  --color-brand-yellow: #FFE78F;
+  --color-brand-navy: #111827;
+  --color-brand-green: #16803C;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: #F7F6F2;
+  color: #111827;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+
+.num-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* ---------- Checkout flow animations ---------- */
+@keyframes fortiva-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fortiva-pop {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes fortiva-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fortiva-scan {
+  0% {
+    top: 6%;
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    top: 94%;
+    opacity: 0;
+  }
+}
+
+@keyframes fortiva-circle {
+  from {
+    stroke-dashoffset: 300;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes fortiva-check {
+  from {
+    stroke-dashoffset: 60;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-fade {
+  animation: fortiva-fade 0.2s ease-out both;
+}
+
+.animate-pop {
+  animation: fortiva-pop 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-fade-up {
+  animation: fortiva-fade-up 0.35s ease-out both;
+}
+
+.animate-scan {
+  animation: fortiva-scan 2.6s ease-in-out infinite;
+}
+
+.animate-circle {
+  stroke-dasharray: 300;
+  animation: fortiva-circle 0.6s ease-out both;
+}
+
+.animate-check {
+  stroke-dasharray: 60;
+  animation: fortiva-check 0.45s ease-out 0.25s both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade,
+  .animate-pop,
+  .animate-fade-up,
+  .animate-scan,
+  .animate-circle,
+  .animate-check {
+    animation: none;
+  }
+}
