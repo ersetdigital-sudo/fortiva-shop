@@ -8,7 +8,7 @@ export default async function AdminOrdersPage() {
   const { data } = await createAdminClient()
     .from('orders')
     .select(
-      'id, invoice_number, category_name, provider_name, nominal_label, destination, total_price, admin_fee, status, serial_number, token_pln, customer_note, created_at'
+      'id, invoice_number, category_name, provider_name, nominal_label, destination, total_price, admin_fee, status, serial_number, token_pln, customer_note, payment_method, created_at'
     )
     .order('created_at', { ascending: false })
     .limit(300);
@@ -17,10 +17,7 @@ export default async function AdminOrdersPage() {
 
   return (
     <>
-      <PageHeader
-        title="Pesanan"
-        description="Pantau, ubah status, dan lengkapi detail transaksi pelanggan."
-      />
+      <PageHeader title="Pesanan" description="Kelola dan proses seluruh transaksi Fortiva" />
       <OrdersClient initialOrders={orders} />
     </>
   );

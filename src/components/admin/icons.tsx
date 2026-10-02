@@ -110,6 +110,70 @@ export const IconCheck: React.FC<IconProps> = ({ className }) => (
   </svg>
 );
 
+export const IconSearch: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)} {...stroke}>
+    <circle cx="11" cy="11" r="7" />
+    <path d="M20 20l-3.6-3.6" />
+  </svg>
+);
+
+export const IconFilter: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)} {...stroke}>
+    <path d="M4 6h16M7 12h10M10 18h4" />
+  </svg>
+);
+
+export const IconCalendar: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)} {...stroke}>
+    <rect x="3.5" y="5" width="17" height="15.5" rx="2.5" />
+    <path d="M3.5 9.5h17M8 3.5v3M16 3.5v3" />
+  </svg>
+);
+
+export const IconMoreVertical: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <circle cx="12" cy="5.5" r="1.7" />
+    <circle cx="12" cy="12" r="1.7" />
+    <circle cx="12" cy="18.5" r="1.7" />
+  </svg>
+);
+
+export const IconChevronLeft: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)} {...stroke} strokeWidth={2.1}>
+    <path d="M14.5 6 8.5 12l6 6" />
+  </svg>
+);
+
+export const IconChevronRight: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)} {...stroke} strokeWidth={2.1}>
+    <path d="M9.5 6l6 6-6 6" />
+  </svg>
+);
+
+export const IconTrash: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)} {...stroke}>
+    <path d="M4.5 7h15M9.5 7V4.8a1.3 1.3 0 0 1 1.3-1.3h2.4a1.3 1.3 0 0 1 1.3 1.3V7" />
+    <path d="M6.5 7l.9 12.1a1.8 1.8 0 0 0 1.8 1.7h5.6a1.8 1.8 0 0 0 1.8-1.7L17.5 7" />
+    <path d="M10.5 11v6M13.5 11v6" />
+  </svg>
+);
+
+export const IconCopy: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)} {...stroke}>
+    <rect x="9" y="9" width="11" height="11" rx="2.5" />
+    <path d="M5 15V6.5A2.5 2.5 0 0 1 7.5 4H16" />
+  </svg>
+);
+
+export const IconRefresh: React.FC<IconProps> = ({ className }) => (
+  <svg {...base(className)} {...stroke}>
+    <path d="M20 11.5A8 8 0 0 0 6.3 6.3L4 8.5" />
+    <path d="M4 4.5v4h4" />
+    <path d="M4 12.5a8 8 0 0 0 13.7 5.2L20 15.5" />
+    <path d="M20 19.5v-4h-4" />
+  </svg>
+);
+
 export const IconEye: React.FC<IconProps> = ({ className }) => (
   <svg {...base(className)} {...stroke}>
     <path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" />
