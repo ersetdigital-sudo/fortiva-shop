@@ -3,6 +3,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { TransactionRecord } from '../types';
 import { useRouter } from '../router';
+import { useCatalog } from '../lib/catalog-context';
+import { setting } from '../lib/catalog-types';
+import { cldUrl } from '../lib/cloudinary-url';
 
 type CheckoutStep = 'review' | 'payment' | 'processing' | 'success';
 
@@ -83,6 +86,14 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   onConfirmPayment,
 }) => {
   const { navigate } = useRouter();
+  const { settings, bankAccounts } = useCatalog();
+  const qrisImage = setting(settings, 'qris_image_url', '');
+  const qrisMerchant = setting(settings, 'qris_merchant', 'Fortiva Shop');
+  const paymentInstructions = setting(
+    settings,
+    'payment_instructions',
+    'Scan QRIS dengan aplikasi bank atau e-wallet apa pun.'
+  );
   const [step, setStep] = useState<CheckoutStep>('review');
   const [processIndex, setProcessIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(14 * 60 + 59);
@@ -266,6 +277,13 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
 
               {/* QR code + scan animation */}
               <div className="relative mx-auto w-56 h-56 p-3 bg-white border border-stone-200 rounded-2xl shadow-2xs overflow-hidden">
+                {qrisImage ? (
+                  <img
+                    src={cldUrl(qrisImage, { w: 480, crop: 'limit' })}
+                    alt={`QRIS ${qrisMerchant}`}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
                 <svg
                   viewBox="0 0 100 100"
                   className="w-full h-full"
@@ -308,19 +326,28 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   <circle cx="72" cy="88" r="2.2" />
                   <circle cx="86" cy="82" r="2.6" />
                 </svg>
+                )}
 
                 {/* Logo chip di tengah QR */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <span className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-md">
-                    <span className="w-9 h-9 rounded-lg bg-brand-red flex items-center justify-center">
-                      <BoltIcon className="w-6 h-6 text-white" />
+                {!qrisImage && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-md">
+                      <span className="w-9 h-9 rounded-lg bg-brand-red flex items-center justify-center">
+                        <BoltIcon className="w-6 h-6 text-white" />
+                      </span>
                     </span>
-                  </span>
-                </div>
+                  </div>
+                )}
 
                 {/* Garis scan */}
                 <span className="pointer-events-none absolute left-4 right-4 h-0.5 rounded-full bg-gradient-to-r from-transparent via-brand-red to-transparent animate-scan" />
               </div>
+
+              {paymentInstructions && (
+                <p className="text-[11px] text-stone-500 leading-relaxed text-center">
+                  {paymentInstructions}
+                </p>
+              )}
 
               <div className="flex items-center justify-between rounded-xl bg-stone-50 border border-stone-200/80 px-4 py-3 text-xs">
                 <span className="text-stone-500">Berlaku sampai</span>
@@ -328,6 +355,58 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   {timeFormatted}
                 </span>
               </div>
+
+              {bankAccounts.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
+                    Atau transfer ke rekening
+                  </p>
+                  <div className="space-y-2">
+                    {bankAccounts.map((bank) => (
+                      <div
+                        key={bank.id}
+                        className="flex items-center gap-3 rounded-xl border border-stone-200/90 bg-stone-50/60 px-3 py-2.5"
+                      >
+                        {bank.logoUrl ? (
+                          <img
+                            src={cldUrl(bank.logoUrl, { w: 80, h: 80, crop: 'fit' })}
+                            alt={bank.bankName}
+                            loading="lazy"
+                            className="w-8 h-8 rounded-md object-contain bg-white border border-stone-200 shrink-0"
+                          />
+                        ) : (
+                          <span className="w-8 h-8 rounded-md bg-white border border-stone-200 flex items-center justify-center text-[10px] font-black text-brand-navy shrink-0">
+                            {bank.bankName.slice(0, 3).toUpperCase()}
+                          </span>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[11px] text-stone-500 truncate">
+                            {bank.bankName}
+                          </div>
+                          <div className="text-sm font-extrabold text-brand-navy num-tabular truncate">
+                            {bank.accountNumber}
+                          </div>
+                          <div className="text-[11px] text-stone-500 truncate">
+                            a.n. {bank.accountName}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copy(bank.accountNumber, `bank-${bank.id}`)}
+                          aria-label={`Salin nomor rekening ${bank.bankName}`}
+                          className="w-7 h-7 rounded-md text-stone-400 hover:text-brand-blue hover:bg-stone-200/60 flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                        >
+                          {copied === `bank-${bank.id}` ? (
+                            <CheckIcon className="w-3.5 h-3.5 text-brand-green" />
+                          ) : (
+                            <CopyIcon className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -344,7 +423,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 Kembali
               </button>
               <p className="text-[10px] text-stone-400 text-center">
-                NMID: ID1020084910283 · Fortiva Digital
+                {qrisMerchant}
               </p>
             </div>
           )}

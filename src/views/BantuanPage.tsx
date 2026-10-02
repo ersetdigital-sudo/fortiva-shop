@@ -5,6 +5,8 @@ import React, { useState } from 'react';
 import { Link } from '../router';
 
 import { Icon } from '../components/icons';
+import { useCatalog } from '../lib/catalog-context';
+import { whatsappUrl } from '../lib/catalog-types';
 
 interface FaqItem {
   question: string;
@@ -13,6 +15,7 @@ interface FaqItem {
 }
 
 export const BantuanPage: React.FC = () => {
+  const { settings } = useCatalog();
   const [openIndex, setOpenIndex] = useState<number | null>(0);
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
 
@@ -109,7 +112,7 @@ export const BantuanPage: React.FC = () => {
               <span className="text-xs font-semibold text-stone-700">08.00 – 22.00 WIB</span>
               <span className="text-stone-300">·</span>
               <a
-                href="https://wa.me/6281234567890?text=Halo%20CS%20Fortiva%20Shop"
+                href={whatsappUrl(settings, 'Halo CS Fortiva Shop')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-bold text-emerald-700 hover:underline"

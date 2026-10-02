@@ -3,9 +3,19 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { ProductCategory, ProviderItem, NominalItem } from '../types';
-import { CATEGORIES_CONFIG, PROVIDERS_BY_CATEGORY, NOMINALS_BY_CATEGORY } from '../data/products';
+import { useCatalog } from '../lib/catalog-context';
+import { whatsappUrl, type CategoryConfigEntry } from '../lib/catalog-types';
 
 import { Icon } from './icons';
+
+/** Cadangan kalau kategori belum ada di katalog database. */
+const FALLBACK_CATEGORY_CONFIG: CategoryConfigEntry = {
+  name: 'Layanan Digital',
+  label: 'Layanan',
+  inputLabel: 'Nomor Tujuan',
+  inputPlaceholder: 'Masukkan nomor tujuan…',
+  helperText: 'Pastikan nomor tujuan sudah benar sebelum melanjutkan.',
+};
 
 interface OrderTerminalProps {
   category: ProductCategory;
@@ -33,9 +43,11 @@ export const OrderTerminal: React.FC<OrderTerminalProps> = ({
   onCheckout,
   error,
 }) => {
-  const currentCategoryConfig = CATEGORIES_CONFIG[category];
-  const providers = PROVIDERS_BY_CATEGORY[category] || [];
-  const nominals = NOMINALS_BY_CATEGORY[category] || [];
+  const catalog = useCatalog();
+  const currentCategoryConfig =
+    catalog.categoriesConfig[category] ?? FALLBACK_CATEGORY_CONFIG;
+  const providers = catalog.providersByCategory[category] ?? [];
+  const nominals = catalog.nominalsByCategory[category] ?? [];
 
   // Sticky CTA mobile: tampil hanya saat seksi terminal terlihat di layar
   const sectionRef = useRef<HTMLElement>(null);
@@ -52,13 +64,10 @@ export const OrderTerminal: React.FC<OrderTerminalProps> = ({
     return () => observer.disconnect();
   }, []);
 
-  const tabs: Array<{ key: ProductCategory; label: string }> = [
-    { key: 'pulsa', label: 'Pulsa' },
-    { key: 'data', label: 'Paket Data' },
-    { key: 'pln', label: 'Token PLN' },
-    { key: 'ewallet', label: 'E-Wallet' },
-    { key: 'tagihan', label: 'Tagihan Rutin' },
-  ];
+  const tabs: Array<{ key: ProductCategory; label: string }> = catalog.categories.map((item) => ({
+    key: item.slug as ProductCategory,
+    label: item.label,
+  }));
 
   const handleClearDestination = () => {
     setDestination('');
@@ -340,7 +349,7 @@ export const OrderTerminal: React.FC<OrderTerminalProps> = ({
               </div>
             </div>
             <a
-              href="https://wa.me/?text=Halo%20Fortiva,%20saya%20butuh%20bantuan%20transaksi"
+              href={whatsappUrl(catalog.settings, 'Halo Fortiva, saya butuh bantuan transaksi')}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs font-bold text-brand-blue hover:underline whitespace-nowrap"

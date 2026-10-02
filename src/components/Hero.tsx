@@ -2,6 +2,8 @@
 
 import React from 'react';
 import { ProductCategory } from '../types';
+import { useCatalog } from '../lib/catalog-context';
+import { setting } from '../lib/catalog-types';
 
 import { Icon, IconName } from './icons';
 
@@ -28,6 +30,8 @@ export const Hero: React.FC<HeroProps> = ({
   onScrollToTerminal,
   onScrollToTracking,
 }) => {
+  const { settings } = useCatalog();
+
   return (
     <section className="relative overflow-hidden">
       {/* Dekorasi latar */}
@@ -46,18 +50,23 @@ export const Hero: React.FC<HeroProps> = ({
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-red opacity-75" />
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-brand-red" />
               </span>
-              Gateway PPOB Aktif 24 Jam
+              {setting(settings, 'announcement', 'GATEWAY PPOB AKTIF 24 JAM')}
             </span>
 
             <h1 className="text-[34px] leading-[1.06] sm:text-5xl lg:text-[58px] font-extrabold text-brand-navy tracking-[-0.035em]">
-              Urus Tagihan &amp; Isi Saldo,
+              {setting(settings, 'hero_title', 'Urus Tagihan & Isi Saldo,')}
               <br />
-              <span className="text-brand-red">Tanpa Ribet.</span>
+              <span className="text-brand-red">
+                {setting(settings, 'hero_title_accent', 'Tanpa Ribet.')}
+              </span>
             </h1>
 
             <p className="text-[15px] sm:text-lg text-stone-600 leading-relaxed max-w-xl mt-5">
-              Dari pulsa dan paket data hingga token listrik PLN dan tagihan rutin — semua
-              dalam satu tempat, dibayar praktis pakai QRIS.
+              {setting(
+                settings,
+                'hero_subtitle',
+                'Dari pulsa dan paket data hingga token listrik PLN dan tagihan rutin — semua dalam satu tempat, dibayar praktis pakai QRIS.'
+              )}
             </p>
 
             {/* CTA */}
@@ -116,7 +125,7 @@ export const Hero: React.FC<HeroProps> = ({
               {/* Panel 1 — Pulsa */}
               <button
                 type="button"
-                onClick={() => onQuickSelect('pulsa', 'p50', 'telkomsel')}
+                onClick={() => onQuickSelect('pulsa', '50.000', 'Telkomsel')}
                 className="group relative w-full text-left bg-white border border-stone-200/90 hover:border-brand-red rounded-2xl p-4 sm:p-5 shadow-2xs hover:shadow-lg transition-all hover:-translate-y-0.5 cursor-pointer overflow-hidden"
               >
                 <span className="absolute left-0 top-0 h-full w-1 bg-brand-red opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -151,7 +160,7 @@ export const Hero: React.FC<HeroProps> = ({
               {/* Panel 2 — Token PLN */}
               <button
                 type="button"
-                onClick={() => onQuickSelect('pln', 'pln100', 'pln-prabayar')}
+                onClick={() => onQuickSelect('pln', '100.000', 'PLN Prabayar')}
                 className="group w-full text-left bg-brand-blue hover:bg-blue-700 text-white rounded-2xl p-4 sm:p-5 shadow-md hover:shadow-lg transition-all hover:-translate-y-0.5 cursor-pointer"
               >
                 <div className="flex items-center justify-between gap-3 mb-2.5">
@@ -179,7 +188,7 @@ export const Hero: React.FC<HeroProps> = ({
               {/* Panel 3 — E-Wallet */}
               <button
                 type="button"
-                onClick={() => onQuickSelect('ewallet', 'ew50', 'gopay')}
+                onClick={() => onQuickSelect('ewallet', '50.000', 'GoPay')}
                 className="group w-full text-left bg-brand-yellow/85 hover:bg-brand-yellow border border-amber-300/80 rounded-2xl p-4 sm:p-5 text-brand-navy shadow-2xs hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer"
               >
                 <div className="flex items-center justify-between gap-3 mb-2">

@@ -6,8 +6,12 @@ import { Logo } from './Logo';
 import { Link } from '../router';
 
 import { Icon } from './icons';
+import { useCatalog } from '../lib/catalog-context';
+import { whatsappUrl } from '../lib/catalog-types';
 
 export const Footer: React.FC = () => {
+  const { settings } = useCatalog();
+
   return (
     <footer className="bg-white border-t border-stone-200/90 mt-12 pt-12 pb-8">
       <div className="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -104,7 +108,7 @@ export const Footer: React.FC = () => {
                 Panduan Pembayaran QRIS
               </Link>
               <a
-                href="https://wa.me/6281234567890?text=Halo%20CS%20Fortiva%20Shop,%20saya%20butuh%20bantuan"
+                href={whatsappUrl(settings, 'Halo CS Fortiva Shop, saya butuh bantuan')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="block text-stone-600 hover:text-brand-navy transition-colors"

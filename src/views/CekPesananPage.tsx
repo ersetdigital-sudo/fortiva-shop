@@ -1,7 +1,10 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { verifyOrder, VerifiedOrderDetail } from '../services/orderService';
+import type { VerifiedOrderDetail } from '../services/orderService';
+import { lookupOrder } from '../app/actions/orders';
+import { useCatalog } from '../lib/catalog-context';
+import { whatsappUrl } from '../lib/catalog-types';
 import { Link, useRouter } from '../router';
 
 /* ---------- Inline icons (SVG, anti-FOUT) ---------- */
@@ -206,6 +209,7 @@ const TONE_DOT: Record<'success' | 'warn' | 'danger', string> = {
 
 export const CekPesananPage: React.FC = () => {
   const { query } = useRouter();
+  const { settings } = useCatalog();
   const [invoiceInput, setInvoiceInput] = useState(query.get('inv') || '');
   const [destInput, setDestInput] = useState(query.get('dest') || '');
 
@@ -231,7 +235,7 @@ export const CekPesananPage: React.FC = () => {
     setHasSearched(true);
 
     try {
-      const response = await verifyOrder(inv, dest);
+      const response = await lookupOrder(inv, dest);
       if (response.success && response.data) {
         setVerifiedOrder(response.data);
       } else {
@@ -436,7 +440,7 @@ export const CekPesananPage: React.FC = () => {
                 refund.
               </p>
               <a
-                href="https://wa.me/6281234567890?text=Halo%20CS%20Fortiva%20Shop,%20saya%20butuh%20bantuan%20terkait%20pesanan"
+                href={whatsappUrl(settings, 'Halo CS Fortiva Shop, saya butuh bantuan terkait pesanan')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-3 w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
@@ -534,7 +538,7 @@ export const CekPesananPage: React.FC = () => {
                     <p className="text-xs text-stone-600 mt-1 leading-relaxed">{errorMessage}</p>
                     <div className="mt-4 pt-4 border-t border-stone-100 flex flex-wrap items-center gap-x-4 gap-y-2">
                       <a
-                        href="https://wa.me/6281234567890?text=Halo%20CS%20Fortiva%20Shop,%20saya%20butuh%20bantuan%20terkait%20pesanan"
+                        href={whatsappUrl(settings, 'Halo CS Fortiva Shop, saya butuh bantuan terkait pesanan')}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors"

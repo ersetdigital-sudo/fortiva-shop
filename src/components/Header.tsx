@@ -5,6 +5,8 @@ import React from 'react';
 import { Link, useRouter } from '../router';
 import { Logo } from './Logo';
 import { Icon } from './icons';
+import { useCatalog } from '../lib/catalog-context';
+import { whatsappUrl } from '../lib/catalog-types';
 
 interface HeaderProps {
   onOpenSearch: () => void;
@@ -19,6 +21,7 @@ export const Header: React.FC<HeaderProps> = ({
   searchQuery,
 }) => {
   const { path, navigate } = useRouter();
+  const { settings } = useCatalog();
 
   const handleNavTerminal = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -193,7 +196,7 @@ export const Header: React.FC<HeaderProps> = ({
 
               {/* Distinctive, Accessible WhatsApp CS Support Button */}
               <a
-                href="https://wa.me/6281234567890?text=Halo%20CS%20Fortiva%20Shop,%20saya%20butuh%20bantuan%20transaksi"
+                href={whatsappUrl(settings, 'Halo CS Fortiva Shop, saya butuh bantuan transaksi')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 h-11 px-4 rounded-[12px] bg-[#16803C] hover:bg-[#137134] text-white font-bold text-xs tracking-tight shadow-xs hover:shadow transition-all active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#16803C] focus-visible:ring-offset-2"
@@ -213,7 +216,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Mobile Header Actions (Visible on small screens only) */}
             <div className="flex md:hidden items-center gap-2.5">
               <a
-                href="https://wa.me/6281234567890?text=Halo%20CS%20Fortiva%20Shop"
+                href={whatsappUrl(settings, 'Halo CS Fortiva Shop')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-[#16803C] hover:bg-[#137134] text-white font-bold text-xs shadow-xs"

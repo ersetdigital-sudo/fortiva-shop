@@ -1,9 +1,8 @@
 'use client';
 
-
 import React, { useState, useEffect } from 'react';
 import { ProductCategory, ProviderItem, NominalItem } from '../types';
-import { PROVIDERS_BY_CATEGORY, NOMINALS_BY_CATEGORY, CATEGORIES_CONFIG } from '../data/products';
+import { useCatalog } from '../lib/catalog-context';
 
 import { Icon } from './icons';
 
@@ -19,6 +18,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
   onSelectProduct,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const catalog = useCatalog();
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,32 +36,29 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
 
   if (!isOpen) return null;
 
-  // Flatten searchable catalog
-  const catalog: Array<{
+  // Flatten searchable catalog (kategori x provider x nominal)
+  const entries: Array<{
     category: ProductCategory;
     provider: ProviderItem;
     nominal: NominalItem;
     categoryLabel: string;
   }> = [];
 
-  const categories: ProductCategory[] = ['pulsa', 'data', 'pln', 'ewallet', 'tagihan'];
-  for (const cat of categories) {
-    const provs = PROVIDERS_BY_CATEGORY[cat] || [];
-    const noms = NOMINALS_BY_CATEGORY[cat] || [];
+  for (const cat of catalog.categories) {
+    const slug = cat.slug as ProductCategory;
+    const provs = catalog.providersByCategory[cat.slug] ?? [];
+    const noms = catalog.nominalsByCategory[cat.slug] ?? [];
+    const categoryLabel = catalog.categoriesConfig[cat.slug]?.label ?? cat.label;
+
     for (const prov of provs) {
       for (const nom of noms) {
-        catalog.push({
-          category: cat,
-          provider: prov,
-          nominal: nom,
-          categoryLabel: CATEGORIES_CONFIG[cat].label,
-        });
+        entries.push({ category: slug, provider: prov, nominal: nom, categoryLabel });
       }
     }
   }
 
   const query = searchTerm.toLowerCase().trim();
-  const filtered = catalog
+  const filtered = entries
     .filter(
       (item) =>
         !query ||
@@ -100,7 +97,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
         <div className="p-2 max-h-80 overflow-y-auto">
           {filtered.length === 0 ? (
             <div className="py-8 text-center text-xs text-stone-500">
-              Tidak ditemukan produk yang cocok dengan "{searchTerm}".
+              Tidak ditemukan produk yang cocok dengan &quot;{searchTerm}&quot;.
             </div>
           ) : (
             <div className="space-y-1">

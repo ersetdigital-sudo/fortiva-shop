@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { Link } from '../router';
 
 import { Icon, IconName } from '../components/icons';
+import { useCatalog } from '../lib/catalog-context';
+import { whatsappUrl } from '../lib/catalog-types';
 
 const TOC = [
   { id: 'alur', label: 'Alur dasar pembayaran' },
@@ -143,6 +145,7 @@ const EWALLET: AppGuide[] = [
 ];
 
 export const PanduanPage: React.FC = () => {
+  const { settings } = useCatalog();
   const [activeTab, setActiveTab] = useState<'banking' | 'ewallet'>('banking');
   const guides = activeTab === 'banking' ? BANKING : EWALLET;
 
@@ -221,7 +224,7 @@ export const PanduanPage: React.FC = () => {
               Belum yakin langkah berikutnya? Tim CS siap membantu verifikasi pembayaran kamu.
             </p>
             <a
-              href="https://wa.me/6281234567890?text=Halo%20CS%20Fortiva%20Shop,%20saya%20butuh%20bantuan%20pembayaran%20QRIS"
+              href={whatsappUrl(settings, 'Halo CS Fortiva Shop, saya butuh bantuan pembayaran QRIS')}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-3 w-full h-10 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
@@ -427,7 +430,7 @@ export const PanduanPage: React.FC = () => {
                 Kembali ke Katalog
               </Link>
               <a
-                href="https://wa.me/6281234567890?text=Halo%20CS%20Fortiva%20Shop,%20saya%20butuh%20bantuan%20pembayaran%20QRIS"
+                href={whatsappUrl(settings, 'Halo CS Fortiva Shop, saya butuh bantuan pembayaran QRIS')}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-xs text-center"

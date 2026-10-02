@@ -1,11 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import '../index.css';
-import { AppShell } from '../components/AppShell';
-
-// This app is fully client-interactive (state, localStorage, URL query driven),
-// so it is rendered on demand. This also allows `useSearchParams()` inside the
-// client components without requiring extra Suspense boundaries.
-export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'Fortiva Shop · Lokapasar Produk Digital & PPOB Resmi',
@@ -49,7 +43,7 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         />
-        <AppShell>{children}</AppShell>
+        {children}
       </body>
     </html>
   );

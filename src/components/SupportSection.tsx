@@ -5,9 +5,12 @@ import React, { useState } from 'react';
 import { Link, useRouter } from '../router';
 
 import { Icon } from './icons';
+import { useCatalog } from '../lib/catalog-context';
+import { whatsappUrl } from '../lib/catalog-types';
 
 export const SupportSection: React.FC = () => {
   const { navigate } = useRouter();
+  const { settings } = useCatalog();
   const [invoiceQuery, setInvoiceQuery] = useState('');
 
   const handleLacak = (e: React.FormEvent) => {
@@ -118,7 +121,7 @@ export const SupportSection: React.FC = () => {
             </div>
           </div>
           <a
-            href="https://wa.me/6281234567890?text=Halo%20Fortiva%20Shop,%20saya%20butuh%20bantuan%20teknis%20pesanan"
+            href={whatsappUrl(settings, 'Halo Fortiva Shop, saya butuh bantuan teknis pesanan')}
             target="_blank"
             rel="noopener noreferrer"
             className="mt-4 w-full h-10 rounded-lg bg-brand-green hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-xs"

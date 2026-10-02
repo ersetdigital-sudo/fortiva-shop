@@ -1,12 +1,12 @@
 import { Suspense } from 'react';
-import { PanduanPage } from '../../views/PanduanPage';
+import { HomePage } from '../../views/HomePage';
 
 export const dynamic = 'force-dynamic';
 
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <PanduanPage />
+      <HomePage />
     </Suspense>
   );
 }

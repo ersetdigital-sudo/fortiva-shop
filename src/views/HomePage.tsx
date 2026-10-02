@@ -2,14 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { ProductCategory, ProviderItem, NominalItem, TransactionRecord } from '../types';
-import {
-  CATEGORIES_CONFIG,
-  PROVIDERS_BY_CATEGORY,
-  NOMINALS_BY_CATEGORY,
-  detectProviderFromPhone,
-  validateDestination,
-} from '../data/products';
-import { saveOrder } from '../services/orderService';
+import { detectProviderFromPhone, validateDestination } from '../data/products';
+import { useCatalog } from '../lib/catalog-context';
+import type { Catalog } from '../lib/catalog-types';
+import { findNominal, findProvider } from '../lib/catalog-lookup';
+import { placeOrder } from '../app/actions/orders';
 import { useRouter } from '../router';
 import { Hero } from '../components/Hero';
 import { CategoriesGrid } from '../components/CategoriesGrid';
@@ -19,17 +16,47 @@ import { StepsGuide } from '../components/StepsGuide';
 import { SupportSection } from '../components/SupportSection';
 import { CheckoutSheet } from '../components/CheckoutSheet';
 
+/** Provider cadangan kalau katalog belum punya data untuk kategori tsb. */
+const EMPTY_PROVIDER: ProviderItem = {
+  id: '',
+  name: '-',
+  code: '',
+  shortName: '-',
+  bgColor: '#111827',
+  textColor: '#FFFFFF',
+};
+
+const EMPTY_NOMINAL: NominalItem = {
+  id: '',
+  label: '-',
+  description: '',
+  price: 0,
+};
+
+function firstProviderFor(catalog: Catalog, slug: string): ProviderItem {
+  return catalog.providersByCategory[slug]?.[0] ?? EMPTY_PROVIDER;
+}
+
+/** Nominal default: badge POPULER bila ada, kalau tidak item pertama. */
+function preferredNominalFor(catalog: Catalog, slug: string): NominalItem {
+  const list = catalog.nominalsByCategory[slug] ?? [];
+  return list.find((item) => item.badge === 'POPULER') ?? list[0] ?? EMPTY_NOMINAL;
+}
+
 export const HomePage: React.FC = () => {
   const { path, query, navigate } = useRouter();
+  const catalog = useCatalog();
 
   // Category, Provider, Destination, Nominal state
-  const [category, setCategory] = useState<ProductCategory>('pulsa');
-  const [provider, setProvider] = useState<ProviderItem>(
-    PROVIDERS_BY_CATEGORY.pulsa[0]
+  const [category, setCategory] = useState<ProductCategory>(
+    () => (catalog.categories[0]?.slug as ProductCategory) ?? 'pulsa'
+  );
+  const [provider, setProvider] = useState<ProviderItem>(() =>
+    firstProviderFor(catalog, catalog.categories[0]?.slug ?? 'pulsa')
   );
   const [destination, setDestination] = useState<string>('081234567890');
-  const [nominal, setNominal] = useState<NominalItem>(
-    NOMINALS_BY_CATEGORY.pulsa[4] // 25.000 POPULER
+  const [nominal, setNominal] = useState<NominalItem>(() =>
+    preferredNominalFor(catalog, catalog.categories[0]?.slug ?? 'pulsa')
   );
 
   // Checkout flow state
@@ -37,16 +64,16 @@ export const HomePage: React.FC = () => {
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [currentTransaction, setCurrentTransaction] = useState<TransactionRecord | null>(null);
 
-  // Check URL query on homepage (e.g. /?category=pln&prov=pln-prabayar&nom=pln100)
+  // Check URL query on homepage (e.g. /?category=pln&prov=...&nom=...)
   useEffect(() => {
-    const catQuery = query.get('category') as ProductCategory;
+    const catQuery = query.get('category') as ProductCategory | null;
     const provQuery = query.get('prov');
     const nomQuery = query.get('nom');
-    if (catQuery && PROVIDERS_BY_CATEGORY[catQuery]) {
+    if (catQuery && catalog.providersByCategory[catQuery]) {
       handleCategoryChange(catQuery, provQuery || undefined, nomQuery || undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query]);
+  }, [query, catalog]);
 
   // Scroll to the hash target on mount (handles cross-page navigation to /#terminal etc.)
   useEffect(() => {
@@ -70,21 +97,10 @@ export const HomePage: React.FC = () => {
   ) => {
     setCheckoutError(null);
     setCategory(newCat);
-    const catProviders = PROVIDERS_BY_CATEGORY[newCat] || [];
-    let selectedProv = catProviders[0];
-    if (forcedProviderId) {
-      const match = catProviders.find((p) => p.id === forcedProviderId);
-      if (match) selectedProv = match;
-    }
-    setProvider(selectedProv);
 
-    const catNominals = NOMINALS_BY_CATEGORY[newCat] || [];
-    let chosenNominal = catNominals.find((n) => n.badge === 'POPULER') || catNominals[0];
-    if (forcedNominalId) {
-      const nomMatch = catNominals.find((n) => n.id === forcedNominalId);
-      if (nomMatch) chosenNominal = nomMatch;
-    }
-    setNominal(chosenNominal);
+    // Resolver toleran: menerima id database, kode, nama/label, atau penanda lama.
+    setProvider(findProvider(catalog, newCat, forcedProviderId) ?? EMPTY_PROVIDER);
+    setNominal(findNominal(catalog, newCat, forcedNominalId) ?? EMPTY_NOMINAL);
   };
 
   // Phone input with automatic provider detection
@@ -93,7 +109,7 @@ export const HomePage: React.FC = () => {
     setCheckoutError(null);
     if (category === 'pulsa' || category === 'data') {
       const detectedName = detectProviderFromPhone(val);
-      const catProviders = PROVIDERS_BY_CATEGORY[category];
+      const catProviders = catalog.providersByCategory[category] ?? [];
       const match = catProviders.find((p) =>
         p.name.toLowerCase().includes(detectedName.toLowerCase())
       );
@@ -139,44 +155,49 @@ export const HomePage: React.FC = () => {
       now.getMinutes()
     ).padStart(2, '0')}`;
 
-    const invoiceNum = 'INV-2025-' + Math.floor(10000 + Math.random() * 90000);
-    const snNum = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(
-      now.getDate()
-    ).padStart(2, '0')}${timeStr.replace(':', '')}${Math.floor(100000 + Math.random() * 900000)}`;
-
-    const tokenPlnNum =
-      category === 'pln'
-        ? `${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(
-            1000 + Math.random() * 9000
-          )}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(
-            1000 + Math.random() * 9000
-          )}-${Math.floor(1000 + Math.random() * 9000)}`
-        : undefined;
+    const categoryName = catalog.categoriesConfig[category]?.name ?? category;
 
     const newTx: TransactionRecord = {
       id: 'tx-' + Date.now(),
-      invoiceNumber: invoiceNum,
-      categoryName: CATEGORIES_CONFIG[category].name,
+      invoiceNumber: 'MENUNGGU…',
+      categoryName,
       providerName: provider.name,
       nominalLabel: nominal.label,
       destination: destination || '081234567890',
       totalPrice: nominal.price,
       adminFee: 0,
-      status: 'SUCCESS',
+      status: 'PENDING',
       createdAt: `Hari ini, ${timeStr} WIB`,
-      serialNumber: snNum,
-      tokenPln: tokenPlnNum,
     };
 
     setCurrentTransaction(newTx);
     setIsCheckoutOpen(true);
   };
 
-  // Pembayaran sukses -> simpan pesanan ke private store (untuk halaman Cek Pesanan)
+  // Pembayaran sukses -> simpan pesanan ke Supabase (tabel `orders`)
   const handleConfirmPayment = async (tx: TransactionRecord) => {
-    const completedTx: TransactionRecord = { ...tx, status: 'SUCCESS' };
-    setCurrentTransaction(completedTx);
-    await saveOrder(completedTx);
+    const result = await placeOrder({
+      categorySlug: category,
+      categoryName: tx.categoryName,
+      providerName: tx.providerName,
+      nominalLabel: tx.nominalLabel,
+      destination: tx.destination,
+      totalPrice: tx.totalPrice,
+      adminFee: tx.adminFee,
+    });
+
+    if (!result.ok) {
+      setCurrentTransaction({ ...tx, status: 'FAILED' });
+      return;
+    }
+
+    setCurrentTransaction({
+      ...tx,
+      status: 'SUCCESS',
+      invoiceNumber: result.invoiceNumber ?? tx.invoiceNumber,
+      serialNumber: result.serialNumber ?? tx.serialNumber,
+      tokenPln: result.tokenPln ?? tx.tokenPln,
+    });
   };
 
   return (
@@ -229,4 +250,3 @@ export const HomePage: React.FC = () => {
     </>
   );
 };
-
