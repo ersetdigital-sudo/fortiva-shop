@@ -3,7 +3,6 @@
 import React, { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { deleteProduct, saveProduct, type ProductInput } from '@/app/admin/(dashboard)/actions';
-import { ImageUploader } from './ImageUploader';
 import {
   Badge,
   EmptyState,
@@ -437,16 +436,6 @@ export function ProductsClient({
                   value={form.sortOrder}
                   onChange={(event) => setForm({ ...form, sortOrder: event.target.value })}
                   className={`${inputClass} num-tabular`}
-                />
-              </div>
-
-              <div className="sm:col-span-2">
-                <ImageUploader
-                  label="Gambar Produk"
-                  value={form.imageUrl}
-                  onChange={(url) => setForm((prev) => (prev ? { ...prev, imageUrl: url } : prev))}
-                  folder="fortiva/produk"
-                  aspect="square"
                 />
               </div>
 

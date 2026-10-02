@@ -143,7 +143,7 @@ export function SettingsClient({
                     <ImageUploader
                       key={item.key}
                       label={item.label || 'Gambar QRIS'}
-                      hint="JPG, PNG, atau WEBP · maksimal 2MB"
+                      hint="JPG, PNG, atau WEBP · maksimal 10MB"
                       value={values[item.key] ?? ''}
                       onChange={(url) => setValues((prev) => ({ ...prev, [item.key]: url }))}
                       folder="fortiva/qris"

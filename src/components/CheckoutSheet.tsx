@@ -27,7 +27,7 @@ const PROCESS_STEPS = [
 
 const HEADERS: Record<CheckoutStep, { title: string; subtitle: string }> = {
   review: { title: 'Konfirmasi Pesanan', subtitle: 'Periksa kembali detail transaksi kamu' },
-  payment: { title: 'Pembayaran QRIS', subtitle: 'Scan dengan m-Banking atau e-wallet' },
+  payment: { title: 'Pembayaran QRIS', subtitle: 'Scan QRIS atau transfer, lalu konfirmasi' },
   processing: { title: 'Memproses', subtitle: 'Transaksi sedang diproses' },
   success: { title: 'Transaksi Berhasil', subtitle: 'Produk sudah dikirim ke tujuan' },
 };
@@ -154,7 +154,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-brand-navy/60 backdrop-blur-sm animate-fade">
-      <div className="relative w-full sm:max-w-md max-h-[94vh] overflow-y-auto bg-white rounded-t-[28px] sm:rounded-3xl border border-stone-200 shadow-2xl animate-pop pb-[env(safe-area-inset-bottom)]">
+      <div className="relative w-full max-w-full sm:max-w-md max-h-[92vh] sm:max-h-[94vh] overflow-y-auto overscroll-contain bg-white rounded-t-[28px] sm:rounded-3xl border border-stone-200 shadow-2xl animate-pop pb-[env(safe-area-inset-bottom)]">
         {/* Drag handle (mobile) */}
         <div className="sm:hidden pt-3 flex justify-center">
           <span className="w-10 h-1.5 rounded-full bg-stone-200" />
@@ -199,7 +199,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
           </div>
         </div>
 
-        <div className="px-5 py-5">
+        <div className="px-4 sm:px-5 py-4 sm:py-5">
           {step === 'review' && (
             <div className="space-y-4 animate-fade-up">
               <div className="rounded-2xl border border-stone-200/90 overflow-hidden">
@@ -267,7 +267,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-blue bg-blue-50 px-3 py-1 rounded-full">
                   QRIS · Standar Nasional
                 </span>
-                <div className="mt-2 text-2xl font-extrabold text-brand-navy num-tabular">
+                <div className="mt-2 text-xl sm:text-2xl font-extrabold text-brand-navy num-tabular">
                   {rupiah(tx.totalPrice)}
                 </div>
                 <p className="text-[11px] text-stone-500 mt-0.5 font-mono">
@@ -276,7 +276,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
               </div>
 
               {/* QR code + scan animation */}
-              <div className="relative mx-auto w-56 h-56 p-3 bg-white border border-stone-200 rounded-2xl shadow-2xs overflow-hidden">
+              <div className="relative mx-auto w-40 h-40 sm:w-52 sm:h-52 p-2.5 sm:p-3 bg-white border border-stone-200 rounded-2xl shadow-2xs overflow-hidden">
                 {qrisImage ? (
                   <img
                     src={cldUrl(qrisImage, { w: 480, crop: 'limit' })}
@@ -331,9 +331,9 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 {/* Logo chip di tengah QR */}
                 {!qrisImage && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="w-11 h-11 rounded-xl bg-white flex items-center justify-center shadow-md">
-                      <span className="w-9 h-9 rounded-lg bg-brand-red flex items-center justify-center">
-                        <BoltIcon className="w-6 h-6 text-white" />
+                    <span className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-white flex items-center justify-center shadow-md">
+                      <span className="w-7 h-7 sm:w-9 sm:h-9 rounded-lg bg-brand-red flex items-center justify-center">
+                        <BoltIcon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </span>
                     </span>
                   </div>
@@ -361,7 +361,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   <p className="text-[11px] font-bold uppercase tracking-wider text-stone-500">
                     Atau transfer ke rekening
                   </p>
-                  <div className="space-y-2">
+                  <div className="grid gap-2 sm:grid-cols-2">
                     {bankAccounts.map((bank) => (
                       <div
                         key={bank.id}
@@ -408,23 +408,25 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={startPayment}
-                className="w-full h-12 rounded-xl bg-brand-green hover:bg-emerald-700 text-white font-bold text-sm shadow-xs transition-all active:scale-[0.99] cursor-pointer"
-              >
-                Simulasi Scan &amp; Bayar
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep('review')}
-                className="w-full h-11 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition-colors cursor-pointer"
-              >
-                Kembali
-              </button>
-              <p className="text-[10px] text-stone-400 text-center">
-                {qrisMerchant}
-              </p>
+              <div className="sticky bottom-0 -mx-4 sm:-mx-5 mt-1 border-t border-stone-100 bg-white/95 px-4 sm:px-5 pt-3 pb-1 backdrop-blur-xl">
+                <button
+                  type="button"
+                  onClick={startPayment}
+                  className="w-full h-12 rounded-xl bg-brand-navy hover:bg-stone-800 text-white font-bold text-sm shadow-xs transition-all active:scale-[0.99] cursor-pointer"
+                >
+                  Saya Sudah Bayar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep('review')}
+                  className="mt-2 w-full h-10 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Kembali
+                </button>
+                <p className="mt-2 text-[10px] text-stone-400 text-center">
+                  {qrisMerchant}
+                </p>
+              </div>
             </div>
           )}
 

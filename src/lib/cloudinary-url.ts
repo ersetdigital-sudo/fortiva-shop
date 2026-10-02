@@ -7,7 +7,7 @@ export const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NA
 export const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? '';
 
 export const CLOUDINARY_ACCEPTED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-export const CLOUDINARY_MAX_BYTES = 2 * 1024 * 1024; // 2MB
+export const CLOUDINARY_MAX_BYTES = 10 * 1024 * 1024; // 10MB (batas aman paket Cloudinary)
 export const CLOUDINARY_ACCEPT_ATTR = 'image/jpeg,image/png,image/webp';
 
 export interface TransformOptions {

@@ -18,6 +18,8 @@ interface ImageUploaderProps {
   folder?: string;
   label?: string;
   hint?: string;
+  /** Batas ukuran file dalam byte. Bawaan: CLOUDINARY_MAX_BYTES. */
+  maxBytes?: number;
   /** Rasio preview. */
   aspect?: 'square' | 'wide';
 }
@@ -38,9 +40,11 @@ export function ImageUploader({
   onChange,
   folder = 'fortiva',
   label = 'Gambar',
-  hint = 'JPG, PNG, atau WEBP · maksimal 2MB',
+  hint,
+  maxBytes = CLOUDINARY_MAX_BYTES,
   aspect = 'wide',
 }: ImageUploaderProps) {
+  const resolvedHint = hint ?? `JPG, PNG, atau WEBP · maksimal ${humanSize(maxBytes)}`;
   const inputRef = useRef<HTMLInputElement>(null);
   const xhrRef = useRef<XMLHttpRequest | null>(null);
 
@@ -74,8 +78,8 @@ export function ImageUploader({
       setError('Format harus JPG, PNG, atau WEBP.');
       return;
     }
-    if (file.size > CLOUDINARY_MAX_BYTES) {
-      setError(`Ukuran maksimal 2MB (file ini ${humanSize(file.size)}).`);
+    if (file.size > maxBytes) {
+      setError(`Ukuran maksimal ${humanSize(maxBytes)} (file ini ${humanSize(file.size)}).`);
       return;
     }
 
@@ -181,7 +185,7 @@ export function ImageUploader({
     <div className="w-full">
       <div className="mb-1.5 flex items-baseline justify-between gap-3">
         <label className="text-[13px] font-semibold text-[#111827]">{label}</label>
-        <span className="text-[11px] text-[#6B7280]">{hint}</span>
+        <span className="text-[11px] text-[#6B7280]">{resolvedHint}</span>
       </div>
 
       <div
@@ -238,7 +242,7 @@ export function ImageUploader({
             <span className="text-[13px] font-semibold text-[#111827]">
               {isUploading ? 'Mengunggah…' : 'Pilih atau tarik gambar ke sini'}
             </span>
-            <span className="text-[11px] text-[#6B7280]">Maksimal 2MB</span>
+            <span className="text-[11px] text-[#6B7280]">Maksimal {humanSize(maxBytes)}</span>
           </button>
         )}
 
