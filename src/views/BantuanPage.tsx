@@ -24,7 +24,7 @@ export const BantuanPage: React.FC = () => {
       category: 'Transaksi',
       question: 'Berapa lama pulsa atau paket data masuk setelah pembayaran selesai?',
       answer:
-        'Secara umum pulsa dan paket kuota diproses secara otomatis oleh sistem biller dalam 5 hingga 60 detik setelah pembayaran QRIS terkonfirmasi.',
+        'Pulsa dan paket kuota dikirim ke biller setelah pembayaran QRIS diverifikasi oleh tim kami.',
     },
     {
       category: 'Transaksi',
@@ -54,7 +54,7 @@ export const BantuanPage: React.FC = () => {
       category: 'Pembayaran',
       question: 'Aplikasi apa saja yang dapat digunakan untuk scan QRIS?',
       answer:
-        'Semua aplikasi perbankan digital (BCA mobile, Livin Mandiri, BRImo, BNI, CIMB, dll) dan e-wallet resmi di Indonesia (GoPay, DANA, OVO, ShopeePay, LinkAja) dapat digunakan untuk scan barcode QRIS Fortiva Shop.',
+        'Aplikasi perbankan digital (BCA mobile, Livin Mandiri, BRImo, BNI, CIMB, dll) dan e-wallet yang mendukung QRIS (GoPay, DANA, OVO, ShopeePay, LinkAja) dapat digunakan untuk memindai kode QRIS Fortiva Shop.',
     },
     {
       category: 'Privasi',
@@ -86,7 +86,7 @@ export const BantuanPage: React.FC = () => {
       <div className="max-w-3xl mb-10">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-xs font-bold text-brand-green uppercase tracking-wider mb-3">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          Layanan Bantuan Resmi Fortiva Shop
+          Layanan Bantuan Fortiva Shop
         </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-brand-navy tracking-tight">
           Pusat Bantuan &amp; FAQ

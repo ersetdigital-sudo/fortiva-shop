@@ -78,7 +78,7 @@ export const SupportSection: React.FC = () => {
               </div>
               <div className="flex items-center gap-1.5">
                 <Icon name="check_circle" className="w-[15px] h-[15px] text-brand-green shrink-0" />
-                <span>Verifikasi otomatis dalam hitungan detik</span>
+                <span>Pembayaran diverifikasi oleh tim kami</span>
               </div>
             </div>
           </div>
@@ -98,7 +98,7 @@ export const SupportSection: React.FC = () => {
               <Icon name="support_agent" className="w-5 h-5" />
             </div>
             <h3 className="text-lg font-bold text-brand-navy">
-              Pusat Bantuan Resmi
+              Pusat Bantuan
             </h3>
             <p className="text-xs text-stone-600 mt-1 mb-4 leading-relaxed">
               Ada kendala pengisian pulsa atau token PLN belum tercetak? Tim bantuan

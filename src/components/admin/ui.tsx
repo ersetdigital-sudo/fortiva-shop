@@ -1,5 +1,6 @@
 import React from 'react';
 import { IconInbox } from './icons';
+import { statusLabel } from '@/lib/order-status';
 
 /* ------------------------------------------------------------------ *
  * Kelas utilitas bersama
@@ -100,15 +101,20 @@ export function Badge({ children, tone = 'gray' }: { children: React.ReactNode; 
 }
 
 const STATUS_TONES: Record<string, BadgeTone> = {
-  SUCCESS: 'green',
-  PENDING: 'yellow',
+  PENDING_PAYMENT: 'gray',
+  WAITING_VERIFICATION: 'yellow',
+  VERIFIED: 'blue',
   PROCESSING: 'blue',
+  SUCCESS: 'green',
   FAILED: 'red',
+  EXPIRED: 'gray',
+  // Status lama (kompatibilitas data).
+  PENDING: 'yellow',
 };
 
 export function StatusBadge({ status }: { status: string }) {
   const normalized = status.toUpperCase();
-  return <Badge tone={STATUS_TONES[normalized] ?? 'gray'}>{normalized}</Badge>;
+  return <Badge tone={STATUS_TONES[normalized] ?? 'gray'}>{statusLabel(normalized)}</Badge>;
 }
 
 /* ------------------------------------------------------------------ *

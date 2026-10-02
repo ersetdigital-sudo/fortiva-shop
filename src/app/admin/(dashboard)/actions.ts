@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { createAdminClient, getAdminUser } from '@/lib/supabase/server';
+import { buildPlnToken, buildSerialNumber } from '@/lib/order-codes';
+import { ORDER_STATUSES, normalizeOrderStatus, type OrderStatus } from '@/lib/order-status';
 
 export interface ActionResult {
   ok: boolean;
@@ -242,11 +244,15 @@ export async function deleteProduct(id: string): Promise<ActionResult> {
 /* ================================================================== *
  * PESANAN
  * ================================================================== */
-export async function updateOrderStatus(
-  id: string,
-  status: 'PENDING' | 'PROCESSING' | 'SUCCESS' | 'FAILED'
-): Promise<ActionResult> {
+/**
+ * Ubah status manual (override admin). Dipakai untuk kasus luar biasa;
+ * alur normal memakai verifyPayment -> processOrder -> completeOrder.
+ */
+export async function updateOrderStatus(id: string, status: OrderStatus): Promise<ActionResult> {
   if (!(await requireAdmin())) return DENIED;
+  if (!(ORDER_STATUSES as readonly string[]).includes(status)) {
+    return { ok: false, error: 'Status tidak dikenal.' };
+  }
 
   try {
     const { error } = await createAdminClient()
@@ -254,6 +260,138 @@ export async function updateOrderStatus(
       .update({ status })
       .eq('id', id);
     if (error) return fail(error);
+    revalidateAll();
+    return { ok: true };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/** Ambil status pesanan saat ini (untuk menjaga urutan transisi). */
+async function readOrderStatus(
+  supabase: ReturnType<typeof createAdminClient>,
+  id: string
+): Promise<OrderStatus | null> {
+  const { data } = await supabase.from('orders').select('status').eq('id', id).maybeSingle();
+  return data ? normalizeOrderStatus(data.status) : null;
+}
+
+/**
+ * LANGKAH 1 — Verifikasi pembayaran.
+ * Hanya valid dari WAITING_VERIFICATION. Belum menerbitkan serial/token.
+ */
+export async function verifyPayment(id: string): Promise<ActionResult> {
+  if (!(await requireAdmin())) return DENIED;
+
+  try {
+    const supabase = createAdminClient();
+    const current = await readOrderStatus(supabase, id);
+    if (!current) return { ok: false, error: 'Pesanan tidak ditemukan.' };
+    if (current === 'VERIFIED' || current === 'PROCESSING' || current === 'SUCCESS') {
+      return { ok: false, error: 'Pembayaran pesanan ini sudah diverifikasi.' };
+    }
+    if (current !== 'WAITING_VERIFICATION' && current !== 'PENDING_PAYMENT') {
+      return { ok: false, error: `Status ${current} tidak bisa diverifikasi.` };
+    }
+
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: 'VERIFIED', verified_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) return fail(error);
+
+    revalidateAll();
+    return { ok: true };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/**
+ * LANGKAH 2 — Proses pesanan (kirim ke biller).
+ * Serial number & token PLN diterbitkan DI SINI, bukan saat checkout.
+ */
+export async function processOrder(id: string): Promise<ActionResult> {
+  if (!(await requireAdmin())) return DENIED;
+
+  try {
+    const supabase = createAdminClient();
+    const { data: order } = await supabase
+      .from('orders')
+      .select('status, category_slug, serial_number, token_pln')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (!order) return { ok: false, error: 'Pesanan tidak ditemukan.' };
+
+    const current = normalizeOrderStatus(order.status);
+    if (current === 'PROCESSING' || current === 'SUCCESS') {
+      return { ok: false, error: 'Pesanan ini sudah diproses.' };
+    }
+    if (current !== 'VERIFIED') {
+      return { ok: false, error: 'Verifikasi pembayaran dulu sebelum memproses pesanan.' };
+    }
+
+    const serialNumber = order.serial_number || buildSerialNumber();
+    const tokenPln =
+      order.category_slug === 'pln' ? order.token_pln || buildPlnToken() : order.token_pln;
+
+    const { error } = await supabase
+      .from('orders')
+      .update({
+        status: 'PROCESSING',
+        serial_number: serialNumber,
+        token_pln: tokenPln ?? null,
+        processed_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+    if (error) return fail(error);
+
+    revalidateAll();
+    return { ok: true };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/** LANGKAH 3 — Tandai berhasil setelah produk terkirim. */
+export async function completeOrder(id: string): Promise<ActionResult> {
+  if (!(await requireAdmin())) return DENIED;
+
+  try {
+    const supabase = createAdminClient();
+    const current = await readOrderStatus(supabase, id);
+    if (!current) return { ok: false, error: 'Pesanan tidak ditemukan.' };
+    if (current === 'SUCCESS') return { ok: true };
+    if (current !== 'PROCESSING') {
+      return { ok: false, error: 'Proses pesanan dulu sebelum menandai berhasil.' };
+    }
+
+    const { error } = await supabase.from('orders').update({ status: 'SUCCESS' }).eq('id', id);
+    if (error) return fail(error);
+
+    revalidateAll();
+    return { ok: true };
+  } catch (error) {
+    return fail(error);
+  }
+}
+
+/** Tolak laporan pembayaran: pembayaran tidak ditemukan / tidak valid. */
+export async function rejectPayment(id: string): Promise<ActionResult> {
+  if (!(await requireAdmin())) return DENIED;
+
+  try {
+    const supabase = createAdminClient();
+    const current = await readOrderStatus(supabase, id);
+    if (!current) return { ok: false, error: 'Pesanan tidak ditemukan.' };
+    if (current === 'SUCCESS') {
+      return { ok: false, error: 'Pesanan yang sudah berhasil tidak bisa ditolak.' };
+    }
+
+    const { error } = await supabase.from('orders').update({ status: 'FAILED' }).eq('id', id);
+    if (error) return fail(error);
+
     revalidateAll();
     return { ok: true };
   } catch (error) {

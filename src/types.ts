@@ -26,8 +26,10 @@ export interface TransactionRecord {
   destination: string;
   totalPrice: number;
   adminFee: number;
-  status: 'PENDING' | 'SUCCESS' | 'FAILED';
+  /** Status lengkap; lihat `src/lib/order-status.ts`. */
+  status: import('./lib/order-status').OrderStatus;
   createdAt: string;
+  /** Serial number & token HANYA terisi setelah admin memverifikasi pembayaran. */
   serialNumber?: string;
   tokenPln?: string;
 }

@@ -29,14 +29,14 @@ export const CATEGORIES_CONFIG: Record<
     label: 'Token PLN',
     inputLabel: 'Nomor Meter / ID Pelanggan PLN',
     inputPlaceholder: '14xxxxxxxxxx / 5xxxxxxxxxxx',
-    helperText: '20 Digit stroom token otomatis muncul di layar dan tersimpan di riwayat.',
+    helperText: '20 digit token muncul di halaman status setelah pembayaran diverifikasi.',
   },
   ewallet: {
     name: 'Top Up E-Wallet',
     label: 'E-Wallet',
     inputLabel: 'Nomor Ponsel Akun E-Wallet',
     inputPlaceholder: '08xxxxxxxxxx',
-    helperText: 'Saldo masuk otomatis ke akun tujuan dalam hitungan detik tanpa biaya admin.',
+    helperText: 'Saldo dikirim ke akun tujuan setelah pembayaran QRIS diverifikasi.',
   },
   tagihan: {
     name: 'Tagihan Rutin & Bulanan',

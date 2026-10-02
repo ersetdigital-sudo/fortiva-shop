@@ -59,7 +59,7 @@ export const FALLBACK_SETTINGS: Record<string, string> = {
   qris_image_url: '',
   qris_merchant: 'Fortiva Shop',
   payment_instructions:
-    'Scan QRIS dengan aplikasi bank atau e-wallet apa pun. Pembayaran diverifikasi otomatis dalam 1–5 detik.',
+    'Scan QRIS dengan aplikasi bank atau e-wallet apa pun. Setelah membayar, tekan tombol konfirmasi agar laporan pembayaran kamu diperiksa tim kami.',
   announcement: 'GATEWAY PPOB AKTIF 24 JAM',
   hero_title: 'Urus Tagihan & Isi Saldo,',
   hero_title_accent: 'Tanpa Ribet.',

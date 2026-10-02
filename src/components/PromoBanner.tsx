@@ -11,7 +11,7 @@ interface PromoBannerProps {
 
 export const PromoBanner: React.FC<PromoBannerProps> = ({ onScrollToTerminal }) => {
   return (
-    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="panduan">
+    <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" id="promo">
       <div className="bg-[#FFE78F]/85 border border-amber-300 rounded-3xl p-6 sm:p-10 text-brand-navy shadow-xs relative overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
           {/* Text Content */}

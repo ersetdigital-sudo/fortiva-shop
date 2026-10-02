@@ -14,15 +14,15 @@ interface HeroProps {
 }
 
 const STATS = [
-  { value: '12.480+', label: 'Transaksi hari ini' },
-  { value: '~4 dtk', label: 'Rata-rata proses' },
-  { value: '24/7', label: 'Layanan aktif' },
+  { value: 'Pulsa & Data', label: 'Produk digital' },
+  { value: 'Token PLN', label: 'Listrik prabayar' },
+  { value: 'QRIS', label: 'Metode pembayaran' },
 ];
 
 const TRUST: { icon: IconName; text: string; color: string }[] = [
   { icon: 'verified_user', text: 'QRIS Standar Nasional', color: 'text-brand-green' },
   { icon: 'security', text: 'Enkripsi 256-bit', color: 'text-brand-blue' },
-  { icon: 'check_circle', text: 'Biller resmi', color: 'text-emerald-600' },
+  { icon: 'check_circle', text: 'Biller tersambung', color: 'text-emerald-600' },
 ];
 
 export const Hero: React.FC<HeroProps> = ({
@@ -169,14 +169,14 @@ export const Hero: React.FC<HeroProps> = ({
                     Token PLN Prabayar
                   </span>
                   <span className="px-2 py-0.5 rounded-md bg-white/20 text-[10px] font-bold shrink-0">
-                    Stroom Instan
+                    Token Prabayar
                   </span>
                 </div>
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="min-w-0">
                     <div className="text-base font-extrabold">Nominal Rp100.000</div>
                     <p className="text-[11px] text-blue-100 mt-0.5">
-                      20 digit token tercetak otomatis
+                      20 digit token tampil setelah verifikasi
                     </p>
                   </div>
                   <span className="text-xl font-black num-tabular text-brand-yellow shrink-0">
@@ -206,7 +206,7 @@ export const Hero: React.FC<HeroProps> = ({
                 </div>
                 <div className="mt-2.5 pt-2.5 border-t border-stone-900/10 flex items-center justify-between">
                   <span className="text-[11px] text-stone-700">Mulai Rp20.000</span>
-                  <span className="text-[11px] font-bold text-stone-800">Masuk instan</span>
+                  <span className="text-[11px] font-bold text-stone-800">Setelah verifikasi</span>
                 </div>
               </button>
             </div>

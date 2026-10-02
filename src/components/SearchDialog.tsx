@@ -139,7 +139,7 @@ export const SearchDialog: React.FC<SearchDialogProps> = ({
 
         <div className="p-2.5 bg-stone-50 border-t border-stone-100 flex items-center justify-between text-[11px] text-stone-500">
           <span>Pilih untuk langsung mengatur di terminal transaksi</span>
-          <span>Fortiva Instant Engine</span>
+          <span>Pencarian Katalog</span>
         </div>
       </div>
     </div>

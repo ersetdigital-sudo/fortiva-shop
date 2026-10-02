@@ -1,10 +1,12 @@
 /**
  * Tipe & util pesanan yang aman dipakai di client.
  *
- * Penyimpanan dan verifikasi pesanan kini ditangani server action
+ * Penyimpanan dan verifikasi pesanan ditangani server action
  * (`src/app/actions/orders.ts`) yang bicara langsung ke Supabase.
  * Tabel `orders` sengaja TIDAK bisa dibaca publik lewat RLS.
  */
+
+import type { OrderStatus } from '../lib/order-status';
 
 export interface VerifiedOrderDetail {
   invoiceNumber: string;
@@ -14,8 +16,9 @@ export interface VerifiedOrderDetail {
   maskedDestination: string;
   totalPrice: number;
   paymentMethod: string;
-  status: 'SUCCESS' | 'PROCESSING' | 'PENDING' | 'FAILED';
+  status: OrderStatus;
   createdAt: string;
+  /** Terisi hanya saat status sudah VERIFIED/PROCESSING/SUCCESS. */
   serialNumber?: string;
   tokenPln?: string;
   customerNote?: string;

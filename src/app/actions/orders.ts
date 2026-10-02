@@ -4,13 +4,19 @@ import { revalidatePath } from 'next/cache';
 import { createAdminClient } from '@/lib/supabase/server';
 import { maskDestination, type VerificationResponse } from '@/services/orderService';
 import { DEFAULT_WHATSAPP_CS } from '@/lib/catalog-types';
+import { buildInvoiceNumber } from '@/lib/order-codes';
+import { canRevealProduct, normalizeOrderStatus, type OrderStatus } from '@/lib/order-status';
 
 /**
  * Server action untuk sisi toko publik.
  *
  * Tabel `orders` tidak punya policy SELECT untuk anon (data pribadi),
  * jadi pembuatan & pencarian pesanan WAJIB lewat sini memakai service role.
- * Verifikasi tetap menuntut kecocokan nomor invoice + nomor tujuan.
+ *
+ * PENTING: `placeOrder` TIDAK menandai transaksi berhasil. Aksi pelanggan
+ * ("Saya Sudah Bayar") hanya melaporkan pembayaran, jadi statusnya
+ * WAITING_VERIFICATION. Serial number / token baru diterbitkan admin setelah
+ * dana benar-benar terverifikasi.
  */
 
 export interface PlaceOrderInput {
@@ -26,30 +32,7 @@ export interface PlaceOrderInput {
 export interface PlaceOrderResult {
   ok: boolean;
   invoiceNumber?: string;
-  serialNumber?: string;
-  tokenPln?: string;
   error?: string;
-}
-
-/** Nomor invoice: INV-<tahun>-<5 digit>. */
-function buildInvoiceNumber(): string {
-  const year = new Date().getFullYear();
-  return `INV-${year}-${Math.floor(10000 + Math.random() * 90000)}`;
-}
-
-/** Serial number: YYYYMMDDHHmm + 6 digit acak. */
-function buildSerialNumber(): string {
-  const now = new Date();
-  const pad = (value: number) => String(value).padStart(2, '0');
-  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(
-    now.getHours()
-  )}${pad(now.getMinutes())}`;
-  return `${stamp}${Math.floor(100000 + Math.random() * 900000)}`;
-}
-
-/** Token PLN 20 digit, dikelompokkan 5x4. */
-function buildPlnToken(): string {
-  return Array.from({ length: 5 }, () => Math.floor(1000 + Math.random() * 9000)).join('-');
 }
 
 export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResult> {
@@ -65,9 +48,6 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
   try {
     const supabase = createAdminClient();
 
-    const serialNumber = buildSerialNumber();
-    const tokenPln = input.categorySlug === 'pln' ? buildPlnToken() : null;
-
     // Nomor invoice harus unik — coba beberapa kali kalau bentrok.
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const invoiceNumber = buildInvoiceNumber();
@@ -81,16 +61,18 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
         destination: input.destination.trim(),
         total_price: price,
         admin_fee: Number(input.adminFee) || 0,
-        status: 'SUCCESS',
-        serial_number: serialNumber,
-        token_pln: tokenPln,
+        status: 'WAITING_VERIFICATION',
+        // Serial & token sengaja kosong: belum ada verifikasi pembayaran.
+        serial_number: null,
+        token_pln: null,
+        payment_reported_at: new Date().toISOString(),
         payment_method: 'QRIS Standar Nasional',
       });
 
       if (!error) {
         revalidatePath('/admin');
         revalidatePath('/admin/pesanan');
-        return { ok: true, invoiceNumber, serialNumber, tokenPln: tokenPln ?? undefined };
+        return { ok: true, invoiceNumber };
       }
 
       // 23505 = unique_violation -> nomor invoice kebetulan sama, ulangi.
@@ -107,6 +89,9 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     };
   }
 }
+
+const NOT_FOUND_MESSAGE =
+  'Pesanan tidak ditemukan atau data verifikasi tidak cocok. Pastikan nomor invoice dan nomor tujuan sudah sesuai.';
 
 export async function lookupOrder(
   invoiceNumber: string,
@@ -125,9 +110,6 @@ export async function lookupOrder(
       error: 'Masukkan nomor HP atau nomor meter tujuan (minimal 4 digit) untuk verifikasi.',
     };
   }
-
-  // Simulasi latensi jaringan agar terasa seperti verifikasi biller sungguhan.
-  await new Promise((resolve) => setTimeout(resolve, 300));
 
   try {
     const supabase = createAdminClient();
@@ -155,19 +137,14 @@ export async function lookupOrder(
       return { success: false, error: NOT_FOUND_MESSAGE };
     }
 
-    const status = String(data.status ?? 'PENDING').toUpperCase();
+    const status = normalizeOrderStatus(data.status);
+    const whatsappNumber = await resolveWhatsappNumber(supabase);
     const supportMessage = encodeURIComponent(
       `Halo CS Fortiva Shop, saya ingin menanyakan status pesanan saya dengan nomor invoice ${data.invoice_number}.`
     );
 
-    // Nomor CS diambil dari tabel `settings` supaya ikut berubah saat diubah di panel admin.
-    const { data: whatsappSetting } = await supabase
-      .from('settings')
-      .select('value')
-      .eq('key', 'whatsapp_cs')
-      .maybeSingle();
-
-    const whatsappNumber = (whatsappSetting?.value || DEFAULT_WHATSAPP_CS).replace(/\D/g, '');
+    // Serial / token disembunyikan selama pembayaran belum terverifikasi.
+    const revealProduct = canRevealProduct(status);
 
     return {
       success: true,
@@ -179,16 +156,12 @@ export async function lookupOrder(
         maskedDestination: maskDestination(String(data.destination ?? '')),
         totalPrice: Number(data.total_price ?? 0),
         paymentMethod: String(data.payment_method ?? 'QRIS Standar Nasional'),
-        status:
-          status === 'SUCCESS' || status === 'PROCESSING' || status === 'FAILED'
-            ? status
-            : 'PENDING',
+        status,
         createdAt: String(data.created_at ?? ''),
-        serialNumber: data.serial_number ? String(data.serial_number) : undefined,
-        tokenPln: data.token_pln ? String(data.token_pln) : undefined,
-        customerNote: data.customer_note
-          ? String(data.customer_note)
-          : 'Serial Number / Token telah berhasil dikirimkan ke biller resmi.',
+        serialNumber:
+          revealProduct && data.serial_number ? String(data.serial_number) : undefined,
+        tokenPln: revealProduct && data.token_pln ? String(data.token_pln) : undefined,
+        customerNote: data.customer_note ? String(data.customer_note) : undefined,
         supportLink: `https://wa.me/${whatsappNumber}?text=${supportMessage}`,
       },
     };
@@ -197,5 +170,77 @@ export async function lookupOrder(
   }
 }
 
-const NOT_FOUND_MESSAGE =
-  'Pesanan tidak ditemukan atau data verifikasi tidak cocok. Pastikan nomor invoice dan nomor tujuan sudah sesuai.';
+export interface PaymentStatusSummary {
+  found: boolean;
+  invoiceNumber?: string;
+  categoryName?: string;
+  providerName?: string;
+  nominalLabel?: string;
+  totalPrice?: number;
+  paymentMethod?: string;
+  status?: OrderStatus;
+  createdAt?: string;
+  serialNumber?: string;
+  tokenPln?: string;
+  supportLink?: string;
+}
+
+/**
+ * Ringkasan status untuk halaman /pembayaran/verifikasi/[invoice].
+ * Tanpa nomor tujuan (dipakai hanya untuk menampilkan status, bukan data pribadi).
+ */
+export async function getPaymentStatus(invoiceNumber: string): Promise<PaymentStatusSummary> {
+  const invoice = invoiceNumber.trim().toUpperCase();
+  if (!invoice) return { found: false };
+
+  try {
+    const supabase = createAdminClient();
+
+    const { data, error } = await supabase
+      .from('orders')
+      .select(
+        'invoice_number, category_name, provider_name, nominal_label, total_price, payment_method, status, serial_number, token_pln, created_at'
+      )
+      .ilike('invoice_number', invoice)
+      .maybeSingle();
+
+    if (error || !data) return { found: false };
+
+    const status = normalizeOrderStatus(data.status);
+    const revealProduct = canRevealProduct(status);
+    const whatsappNumber = await resolveWhatsappNumber(supabase);
+    const supportMessage = encodeURIComponent(
+      `Halo CS Fortiva Shop, saya ingin menanyakan status pembayaran invoice ${data.invoice_number}.`
+    );
+
+    return {
+      found: true,
+      invoiceNumber: String(data.invoice_number),
+      categoryName: String(data.category_name ?? ''),
+      providerName: String(data.provider_name ?? ''),
+      nominalLabel: String(data.nominal_label ?? ''),
+      totalPrice: Number(data.total_price ?? 0),
+      paymentMethod: String(data.payment_method ?? 'QRIS Standar Nasional'),
+      status,
+      createdAt: String(data.created_at ?? ''),
+      serialNumber: revealProduct && data.serial_number ? String(data.serial_number) : undefined,
+      tokenPln: revealProduct && data.token_pln ? String(data.token_pln) : undefined,
+      supportLink: `https://wa.me/${whatsappNumber}?text=${supportMessage}`,
+    };
+  } catch {
+    return { found: false };
+  }
+}
+
+/** Nomor CS diambil dari tabel `settings` supaya ikut berubah saat diubah admin. */
+async function resolveWhatsappNumber(
+  supabase: ReturnType<typeof createAdminClient>
+): Promise<string> {
+  const { data } = await supabase
+    .from('settings')
+    .select('value')
+    .eq('key', 'whatsapp_cs')
+    .maybeSingle();
+
+  return (data?.value || DEFAULT_WHATSAPP_CS).replace(/\D/g, '');
+}

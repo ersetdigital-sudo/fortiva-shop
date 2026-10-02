@@ -166,7 +166,8 @@ export const HomePage: React.FC = () => {
       destination: destination || '081234567890',
       totalPrice: nominal.price,
       adminFee: 0,
-      status: 'PENDING',
+      // Baru dibuat, pelanggan belum melaporkan pembayaran.
+      status: 'PENDING_PAYMENT',
       createdAt: `Hari ini, ${timeStr} WIB`,
     };
 
@@ -174,7 +175,11 @@ export const HomePage: React.FC = () => {
     setIsCheckoutOpen(true);
   };
 
-  // Pembayaran sukses -> simpan pesanan ke Supabase (tabel `orders`)
+  /**
+   * Pelanggan menekan "Saya Sudah Bayar".
+   * Pesanan disimpan sebagai WAITING_VERIFICATION — TANPA serial/token dan
+   * tanpa klaim keberhasilan. Verifikasi dilakukan admin di panel.
+   */
   const handleConfirmPayment = async (tx: TransactionRecord) => {
     const result = await placeOrder({
       categorySlug: category,
@@ -186,18 +191,17 @@ export const HomePage: React.FC = () => {
       adminFee: tx.adminFee,
     });
 
-    if (!result.ok) {
-      setCurrentTransaction({ ...tx, status: 'FAILED' });
-      return;
+    if (!result.ok || !result.invoiceNumber) {
+      return { ok: false, error: result.error };
     }
 
     setCurrentTransaction({
       ...tx,
-      status: 'SUCCESS',
-      invoiceNumber: result.invoiceNumber ?? tx.invoiceNumber,
-      serialNumber: result.serialNumber ?? tx.serialNumber,
-      tokenPln: result.tokenPln ?? tx.tokenPln,
+      status: 'WAITING_VERIFICATION',
+      invoiceNumber: result.invoiceNumber,
     });
+
+    return { ok: true, invoiceNumber: result.invoiceNumber };
   };
 
   return (

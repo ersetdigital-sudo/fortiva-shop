@@ -210,7 +210,7 @@ export const OrderTerminal: React.FC<OrderTerminalProps> = ({
                 Pilih Nominal
               </h3>
               <span className="text-xs text-stone-500">
-                Harga resmi sudah termasuk PPN
+                Harga sudah termasuk PPN
               </span>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -331,7 +331,7 @@ export const OrderTerminal: React.FC<OrderTerminalProps> = ({
             {/* Security Note */}
             <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-stone-500">
               <Icon name="verified_user" className="w-[15px] h-[15px] text-emerald-600 shrink-0" />
-              <span>Enkripsi 256-Bit SSL • Transaksi Otomatis</span>
+              <span>Enkripsi 256-Bit SSL • Verifikasi oleh Admin</span>
             </div>
           </div>
 

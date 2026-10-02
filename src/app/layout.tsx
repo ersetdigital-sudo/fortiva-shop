@@ -2,17 +2,36 @@ import type { Metadata, Viewport } from 'next';
 import '../index.css';
 
 export const metadata: Metadata = {
-  title: 'Fortiva Shop · Lokapasar Produk Digital & PPOB Resmi',
+  title: 'Fortiva Shop | Marketplace Produk Digital & PPOB',
   description:
-    'Lokapasar Produk Digital dan PPOB Resmi di Indonesia. Transaksi pulsa, paket data, token PLN, e-wallet, dan pembayaran tagihan dengan QRIS instan.',
+    'Fortiva Shop menyediakan pulsa, paket data, token PLN, uang elektronik, dan pembayaran tagihan. Transaksi praktis dengan pembayaran QRIS.',
+  keywords: [
+    'marketplace produk digital',
+    'PPOB',
+    'pulsa',
+    'paket data',
+    'token PLN',
+    'pembayaran PLN',
+    'PDAM',
+    'BPJS',
+    'pembayaran internet',
+    'uang elektronik',
+    'multifinance',
+    'QRIS',
+  ],
   openGraph: {
-    title: 'Fortiva Shop · Lokapasar Produk Digital & PPOB Resmi',
+    title: 'Fortiva Shop | Kebutuhan Digital dalam Satu Tempat',
     description:
-      'Lokapasar Produk Digital dan PPOB Resmi di Indonesia. Transaksi pulsa, paket data, token PLN, e-wallet, dan pembayaran tagihan dengan QRIS instan.',
+      'Pulsa, paket data, PLN, uang elektronik, dan berbagai pembayaran tagihan. Pilih produk dan bayar praktis melalui QRIS.',
     type: 'website',
+    siteName: 'Fortiva Shop',
+    locale: 'id_ID',
   },
   twitter: {
     card: 'summary_large_image',
+    title: 'Fortiva Shop | Kebutuhan Digital dalam Satu Tempat',
+    description:
+      'Pulsa, paket data, PLN, uang elektronik, dan berbagai pembayaran tagihan. Pilih produk dan bayar praktis melalui QRIS.',
   },
 };
 

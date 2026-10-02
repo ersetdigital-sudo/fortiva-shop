@@ -9,7 +9,10 @@ export const dynamic = 'force-dynamic';
 interface DashboardStats {
   orders_total: number;
   orders_today: number;
+  /** Belum dibayar + sudah dilaporkan tapi belum diverifikasi. */
   orders_pending: number;
+  orders_waiting_verification: number;
+  orders_verified: number;
   orders_processing: number;
   orders_failed: number;
   orders_success: number;
@@ -37,6 +40,8 @@ const DEFAULT_STATS: DashboardStats = {
   orders_total: 0,
   orders_today: 0,
   orders_pending: 0,
+  orders_waiting_verification: 0,
+  orders_verified: 0,
   orders_processing: 0,
   orders_failed: 0,
   orders_success: 0,
@@ -93,9 +98,9 @@ export default async function AdminOverviewPage() {
           accent="blue"
         />
         <StatCard
-          label="Menunggu Diproses"
-          value={formatNumber(stats.orders_pending + stats.orders_processing)}
-          hint={`${formatNumber(stats.orders_pending)} pending · ${formatNumber(stats.orders_processing)} diproses`}
+          label="Perlu Ditindak"
+          value={formatNumber(stats.orders_pending + stats.orders_verified)}
+          hint={`${formatNumber(stats.orders_waiting_verification)} menunggu verifikasi · ${formatNumber(stats.orders_verified)} siap diproses`}
           accent="red"
         />
         <StatCard
@@ -133,9 +138,10 @@ export default async function AdminOverviewPage() {
           <ul className="flex flex-col gap-3">
             {[
               { label: 'Sukses', value: stats.orders_success, tone: 'green' as const },
-              { label: 'Pending', value: stats.orders_pending, tone: 'yellow' as const },
+              { label: 'Menunggu Verifikasi', value: stats.orders_waiting_verification, tone: 'yellow' as const },
+              { label: 'Terverifikasi', value: stats.orders_verified, tone: 'blue' as const },
               { label: 'Diproses', value: stats.orders_processing, tone: 'blue' as const },
-              { label: 'Gagal', value: stats.orders_failed, tone: 'red' as const },
+              { label: 'Gagal / Kedaluwarsa', value: stats.orders_failed, tone: 'red' as const },
             ].map((item) => {
               const total = Math.max(stats.orders_total, 1);
               const percent = Math.round((item.value / total) * 100);

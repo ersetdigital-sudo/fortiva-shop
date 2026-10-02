@@ -145,12 +145,19 @@ create table if not exists public.orders (
   destination    text not null,
   total_price    numeric(14, 2) not null default 0,
   admin_fee      numeric(14, 2) not null default 0,
-  status         text not null default 'PENDING'
-                 check (status in ('PENDING', 'PROCESSING', 'SUCCESS', 'FAILED')),
+  status         text not null default 'PENDING_PAYMENT'
+                 check (status in (
+                   'PENDING_PAYMENT', 'WAITING_VERIFICATION', 'VERIFIED',
+                   'PROCESSING', 'SUCCESS', 'FAILED', 'EXPIRED'
+                 )),
   serial_number  text,
   token_pln      text,
   customer_note  text,
   payment_method text not null default 'QRIS Standar Nasional',
+  -- Jejak audit verifikasi pembayaran (diisi bertahap oleh admin).
+  payment_reported_at timestamptz,
+  verified_at    timestamptz,
+  processed_at   timestamptz,
   created_at     timestamptz not null default now(),
   updated_at     timestamptz not null default now()
 );
@@ -163,6 +170,66 @@ drop trigger if exists trg_orders_updated on public.orders;
 create trigger trg_orders_updated
   before update on public.orders
   for each row execute function public.set_updated_at();
+
+-- ---------------------------------------------------------------------------
+-- MIGRASI STATUS PEMBAYARAN (aman dijalankan berulang)
+--
+-- Alur status:
+--   PENDING_PAYMENT      -> pelanggan belum melaporkan pembayaran
+--   WAITING_VERIFICATION -> pelanggan menekan "Saya Sudah Bayar"
+--   VERIFIED             -> admin memastikan dana masuk
+--   PROCESSING           -> produk sedang dikirim ke biller
+--   SUCCESS              -> serial / token sudah terkirim
+--   FAILED               -> pembayaran tidak ditemukan / ditolak
+--   EXPIRED              -> QRIS kedaluwarsa sebelum dibayar
+-- ---------------------------------------------------------------------------
+alter table public.orders add column if not exists payment_reported_at timestamptz;
+alter table public.orders add column if not exists verified_at timestamptz;
+alter table public.orders add column if not exists processed_at timestamptz;
+
+-- Status lama 'PENDING' artinya pelanggan belum membayar.
+update public.orders set status = 'PENDING_PAYMENT' where status = 'PENDING';
+
+alter table public.orders alter column status set default 'PENDING_PAYMENT';
+alter table public.orders drop constraint if exists orders_status_check;
+alter table public.orders add constraint orders_status_check
+  check (status in (
+    'PENDING_PAYMENT', 'WAITING_VERIFICATION', 'VERIFIED',
+    'PROCESSING', 'SUCCESS', 'FAILED', 'EXPIRED'
+  ));
+
+-- ---------------------------------------------------------------------------
+-- STATISTIK DASHBOARD ADMIN
+-- Dipanggil dari server memakai service role (execute dicabut dari publik).
+-- ---------------------------------------------------------------------------
+create or replace function public.admin_dashboard_stats()
+returns json
+language sql
+stable
+security definer
+set search_path to 'public'
+as $function$
+  select json_build_object(
+    'orders_total',  (select count(*) from public.orders),
+    'orders_today',  (select count(*) from public.orders where created_at >= date_trunc('day', now())),
+    -- "Menunggu diproses" = belum dibayar + sudah dilaporkan tapi belum diverifikasi.
+    'orders_pending', (select count(*) from public.orders where status in ('PENDING_PAYMENT', 'WAITING_VERIFICATION')),
+    'orders_waiting_verification', (select count(*) from public.orders where status = 'WAITING_VERIFICATION'),
+    'orders_verified', (select count(*) from public.orders where status = 'VERIFIED'),
+    'orders_processing', (select count(*) from public.orders where status = 'PROCESSING'),
+    'orders_failed', (select count(*) from public.orders where status in ('FAILED', 'EXPIRED')),
+    'orders_success', (select count(*) from public.orders where status = 'SUCCESS'),
+    'revenue_total', (select coalesce(sum(total_price), 0) from public.orders where status = 'SUCCESS'),
+    'revenue_today', (select coalesce(sum(total_price), 0) from public.orders where status = 'SUCCESS' and created_at >= date_trunc('day', now())),
+    'products_active', (select count(*) from public.products where is_active),
+    'products_total', (select count(*) from public.products),
+    'categories_active', (select count(*) from public.categories where is_active),
+    'providers_active', (select count(*) from public.providers where is_active),
+    'bank_accounts_active', (select count(*) from public.bank_accounts where is_active)
+  );
+$function$;
+
+revoke execute on function public.admin_dashboard_stats() from anon, authenticated;
 
 -- ---------------------------------------------------------------------------
 -- REKENING BANK
@@ -257,7 +324,7 @@ insert into public.settings (key, value, label, group_name, sort_order) values
   ('whatsapp_label',       'CS WhatsApp · 08.00–22.00 WIB',                  'Label Jam CS',          'kontak', 2),
   ('qris_image_url',       '',                                               'Gambar QRIS',           'pembayaran', 1),
   ('qris_merchant',        'Fortiva Shop',                                   'Nama Merchant QRIS',    'pembayaran', 2),
-  ('payment_instructions', 'Scan QRIS dengan aplikasi bank atau e-wallet apa pun. Pembayaran diverifikasi otomatis dalam 1–5 detik.', 'Instruksi Pembayaran', 'pembayaran', 3),
+  ('payment_instructions', 'Scan QRIS dengan aplikasi bank atau e-wallet apa pun. Setelah membayar, tekan tombol konfirmasi agar laporan pembayaran kamu diperiksa tim kami.', 'Instruksi Pembayaran', 'pembayaran', 3),
   ('announcement',         'GATEWAY PPOB AKTIF 24 JAM',                      'Teks Badge Hero',       'umum', 2),
   ('hero_title',           'Urus Tagihan & Isi Saldo,',                      'Judul Hero Baris 1',    'umum', 3),
   ('hero_title_accent',    'Tanpa Ribet.',                                   'Judul Hero Baris 2',    'umum', 4),
@@ -268,8 +335,8 @@ on conflict (key) do nothing;
 insert into public.categories (slug, name, label, input_label, input_placeholder, helper_text, icon, sort_order) values
   ('pulsa',   'Pulsa Reguler',                'Pulsa',         'Nomor Handphone',                    '08xxxxxxxxxx',                  'Pastikan nomor ponsel aktif untuk menerima serial number (SN).', 'pulsa', 1),
   ('data',    'Paket Data Kuota',             'Paket Data',    'Nomor Handphone',                    '08xxxxxxxxxx',                  'Kuota langsung aktif 24 jam setelah pembayaran QRIS diverifikasi.', 'data', 2),
-  ('pln',     'Token Listrik PLN',            'Token PLN',     'Nomor Meter / ID Pelanggan PLN',     '14xxxxxxxxxx / 5xxxxxxxxxxx',   '20 Digit stroom token otomatis muncul di layar dan tersimpan di riwayat.', 'pln', 3),
-  ('ewallet', 'Top Up E-Wallet',              'E-Wallet',      'Nomor Ponsel Akun E-Wallet',         '08xxxxxxxxxx',                  'Saldo masuk otomatis ke akun tujuan dalam hitungan detik tanpa biaya admin.', 'ewallet', 4),
+  ('pln',     'Token Listrik PLN',            'Token PLN',     'Nomor Meter / ID Pelanggan PLN',     '14xxxxxxxxxx / 5xxxxxxxxxxx',   '20 digit token muncul di halaman status setelah pembayaran diverifikasi.', 'pln', 3),
+  ('ewallet', 'Top Up E-Wallet',              'E-Wallet',      'Nomor Ponsel Akun E-Wallet',         '08xxxxxxxxxx',                  'Saldo dikirim ke akun tujuan setelah pembayaran QRIS diverifikasi.', 'ewallet', 4),
   ('tagihan', 'Tagihan Rutin & Bulanan',      'Tagihan Rutin', 'Nomor Pelanggan / ID Tagihan',       'Masukkan nomor kontrak / ID tagihan...', 'Periksa kembali data nama dan tagihan pokok sebelum menyelesaikan pembayaran.', 'tagihan', 5)
 on conflict (slug) do nothing;
 

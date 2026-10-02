@@ -185,14 +185,18 @@ const DetailItem: React.FC<{
   </div>
 );
 
+/** `step` = jumlah langkah yang sudah selesai (lihat STATUS_STEPS). */
 const STATUS_META: Record<
   VerifiedOrderDetail['status'],
   { label: string; tone: 'success' | 'warn' | 'danger'; step: number; failed?: boolean }
 > = {
-  SUCCESS: { label: 'Transaksi Berhasil', tone: 'success', step: 3 },
+  PENDING_PAYMENT: { label: 'Menunggu Pembayaran', tone: 'warn', step: 1 },
+  WAITING_VERIFICATION: { label: 'Menunggu Verifikasi', tone: 'warn', step: 1 },
+  VERIFIED: { label: 'Pembayaran Terverifikasi', tone: 'warn', step: 2 },
   PROCESSING: { label: 'Sedang Diproses', tone: 'warn', step: 2 },
-  PENDING: { label: 'Menunggu Pembayaran', tone: 'warn', step: 1 },
-  FAILED: { label: 'Gagal / Refund', tone: 'danger', step: 2, failed: true },
+  SUCCESS: { label: 'Transaksi Berhasil', tone: 'success', step: 3 },
+  FAILED: { label: 'Gagal / Perlu Verifikasi Ulang', tone: 'danger', step: 1, failed: true },
+  EXPIRED: { label: 'Pembayaran Kedaluwarsa', tone: 'danger', step: 1, failed: true },
 };
 
 const TONE_CLASS: Record<'success' | 'warn' | 'danger', string> = {
@@ -301,7 +305,7 @@ export const CekPesananPage: React.FC = () => {
       <header className="mb-7 sm:mb-10">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-[11px] font-bold text-brand-blue uppercase tracking-wider mb-3">
           <ShieldIcon className="w-3.5 h-3.5" />
-          Verifikasi Transaksi Resmi
+          Verifikasi Transaksi
         </div>
         <h1 className="text-[28px] leading-[1.15] sm:text-4xl font-extrabold text-brand-navy tracking-tight">
           Cek Pesanan
@@ -464,7 +468,7 @@ export const CekPesananPage: React.FC = () => {
                   </span>
                   <div>
                     <h2 className="text-sm font-extrabold text-brand-navy">Memverifikasi transaksi…</h2>
-                    <p className="text-[11px] text-stone-500">Menghubungi biller resmi Anda</p>
+                    <p className="text-[11px] text-stone-500">Mencari data pesanan Anda</p>
                   </div>
                 </div>
                 <div className="animate-pulse space-y-3">
@@ -574,7 +578,7 @@ export const CekPesananPage: React.FC = () => {
                   <div className="p-5 sm:p-6 flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <span className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-                        Hasil Verifikasi Resmi
+                        Hasil Verifikasi Pesanan
                       </span>
                       <h2 className="text-xl font-extrabold text-brand-navy font-mono mt-1 break-all">
                         {verifiedOrder.invoiceNumber}
@@ -705,7 +709,7 @@ export const CekPesananPage: React.FC = () => {
 
                 <p className="text-[11px] text-stone-500 leading-relaxed px-1">
                   Ada kendala saldo belum masuk atau token tidak valid? Simpan nomor invoice di atas
-                  lalu hubungi CS resmi kami untuk pengecekan langsung ke biller.
+                  lalu hubungi CS kami untuk pengecekan langsung ke biller.
                 </p>
               </div>
             )}

@@ -7,29 +7,38 @@ import { useCatalog } from '../lib/catalog-context';
 import { setting } from '../lib/catalog-types';
 import { cldUrl } from '../lib/cloudinary-url';
 
-type CheckoutStep = 'review' | 'payment' | 'processing' | 'success';
+type CheckoutStep = 'review' | 'payment' | 'processing';
+
+/** Hasil pelaporan pembayaran ke server. */
+export interface ReportPaymentResult {
+  ok: boolean;
+  invoiceNumber?: string;
+  error?: string;
+}
 
 interface CheckoutSheetProps {
   isOpen: boolean;
   transaction: TransactionRecord | null;
   onClose: () => void;
-  /** Dipanggil setelah pembayaran sukses (simpan pesanan, dll). */
-  onConfirmPayment: (tx: TransactionRecord) => Promise<void> | void;
+  /**
+   * Dipanggil saat pelanggan menekan "Saya Sudah Bayar".
+   * Ini HANYA melaporkan pembayaran — status berubah jadi menunggu verifikasi,
+   * bukan berhasil.
+   */
+  onConfirmPayment: (tx: TransactionRecord) => Promise<ReportPaymentResult>;
 }
 
-const STEP_LABELS = ['Konfirmasi', 'Bayar', 'Selesai'];
+const STEP_LABELS = ['Konfirmasi', 'Bayar', 'Verifikasi'];
 
 const PROCESS_STEPS = [
-  { title: 'Memverifikasi pembayaran', desc: 'Mengecek dana masuk melalui QRIS' },
-  { title: 'Menghubungkan ke biller', desc: 'Gateway PPOB resmi & tersertifikasi' },
-  { title: 'Mengirim produk digital', desc: 'Serial number / token sedang dikirim' },
+  { title: 'Mengirim laporan pembayaran', desc: 'Menyimpan nomor invoice & detail pesanan' },
+  { title: 'Menyiapkan verifikasi', desc: 'Laporan diteruskan ke tim pemeriksa' },
 ];
 
 const HEADERS: Record<CheckoutStep, { title: string; subtitle: string }> = {
   review: { title: 'Konfirmasi Pesanan', subtitle: 'Periksa kembali detail transaksi kamu' },
-  payment: { title: 'Pembayaran QRIS', subtitle: 'Scan QRIS atau transfer, lalu konfirmasi' },
-  processing: { title: 'Memproses', subtitle: 'Transaksi sedang diproses' },
-  success: { title: 'Transaksi Berhasil', subtitle: 'Produk sudah dikirim ke tujuan' },
+  payment: { title: 'Pembayaran QRIS', subtitle: 'Scan QRIS atau transfer, lalu laporkan' },
+  processing: { title: 'Mengirim Laporan', subtitle: 'Mohon tunggu sebentar' },
 };
 
 /* ---------- Inline icons (SVG, tidak bergantung font ikon) ---------- */
@@ -98,6 +107,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   const [processIndex, setProcessIndex] = useState(0);
   const [secondsLeft, setSecondsLeft] = useState(14 * 60 + 59);
   const [copied, setCopied] = useState<string | null>(null);
+  const [reportError, setReportError] = useState<string | null>(null);
   const timers = useRef<number[]>([]);
 
   // Reset state setiap kali dibuka dengan transaksi baru
@@ -107,6 +117,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
       setProcessIndex(0);
       setSecondsLeft(14 * 60 + 59);
       setCopied(null);
+      setReportError(null);
     }
     return () => {
       timers.current.forEach((t) => clearTimeout(t));
@@ -126,7 +137,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
   if (!isOpen || !transaction) return null;
 
   const tx = transaction;
-  const activeIndex = step === 'success' ? 2 : step === 'review' ? 0 : 1;
+  const activeIndex = step === 'review' ? 0 : 1;
   const header = HEADERS[step];
 
   const minutes = Math.floor(secondsLeft / 60);
@@ -139,16 +150,30 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
     timers.current.push(window.setTimeout(() => setCopied(null), 2000));
   };
 
+  /**
+   * Melaporkan pembayaran ke server, lalu pindah ke halaman status verifikasi.
+   * TIDAK pernah menampilkan "berhasil" — verifikasi dilakukan admin.
+   */
   const startPayment = () => {
+    setReportError(null);
     setStep('processing');
     setProcessIndex(0);
-    timers.current.push(window.setTimeout(() => setProcessIndex(1), 800));
-    timers.current.push(window.setTimeout(() => setProcessIndex(2), 1700));
+    timers.current.push(window.setTimeout(() => setProcessIndex(1), 700));
     timers.current.push(
       window.setTimeout(async () => {
-        await onConfirmPayment(tx);
-        setStep('success');
-      }, 2600)
+        try {
+          const result = await onConfirmPayment(tx);
+          if (!result.ok) {
+            setReportError(result.error ?? 'Gagal melaporkan pembayaran. Coba lagi.');
+            setStep('payment');
+            return;
+          }
+          navigate(`/pembayaran/verifikasi/${result.invoiceNumber ?? tx.invoiceNumber}`);
+        } catch {
+          setReportError('Tidak dapat menghubungi server. Coba lagi.');
+          setStep('payment');
+        }
+      }, 1500)
     );
   };
 
@@ -238,8 +263,8 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
               </div>
 
               <p className="text-[11px] text-stone-500 leading-relaxed">
-                Pastikan nomor tujuan sudah benar. Produk akan otomatis dikirim setelah
-                pembayaran QRIS terverifikasi.
+                Pastikan nomor tujuan sudah benar. Produk diproses setelah pembayaran QRIS
+                diverifikasi oleh tim kami.
               </p>
 
               <div className="flex gap-2 pt-1">
@@ -408,6 +433,15 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                 </div>
               )}
 
+              {reportError && (
+                <p
+                  role="alert"
+                  className="rounded-xl border border-brand-red/25 bg-brand-red/5 px-3.5 py-2.5 text-[12px] font-medium text-brand-red"
+                >
+                  {reportError}
+                </p>
+              )}
+
               <div className="sticky bottom-0 -mx-4 sm:-mx-5 mt-1 border-t border-stone-100 bg-white/95 px-4 sm:px-5 pt-3 pb-1 backdrop-blur-xl">
                 <button
                   type="button"
@@ -437,7 +471,7 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
                   <span className="w-7 h-7 border-[3px] border-brand-red/25 border-t-brand-red rounded-full animate-spin" />
                 </span>
                 <p className="mt-3 text-sm font-extrabold text-brand-navy">
-                  Memproses transaksi kamu…
+                  Mengirim laporan pembayaran…
                 </p>
                 <p className="text-xs text-stone-500 mt-0.5">
                   Mohon jangan tutup halaman ini
@@ -493,118 +527,6 @@ export const CheckoutSheet: React.FC<CheckoutSheetProps> = ({
             </div>
           )}
 
-          {step === 'success' && (
-            <div className="space-y-4">
-              <div className="text-center animate-pop">
-                <svg className="w-20 h-20 mx-auto" viewBox="0 0 100 100">
-                  <circle
-                    cx="50"
-                    cy="50"
-                    r="44"
-                    fill="none"
-                    stroke="#16803C"
-                    strokeWidth="6"
-                    strokeLinecap="round"
-                    transform="rotate(-90 50 50)"
-                    className="animate-circle"
-                  />
-                  <path
-                    d="M30 52 L44 66 L71 38"
-                    fill="none"
-                    stroke="#16803C"
-                    strokeWidth="7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="animate-check"
-                  />
-                </svg>
-                <h3 className="mt-3 text-lg font-extrabold text-brand-navy">
-                  Transaksi Berhasil
-                </h3>
-                <p className="text-xs text-stone-500 mt-0.5 font-mono">
-                  {tx.invoiceNumber}
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-stone-200/90 bg-stone-50/60 p-4 space-y-3 text-xs animate-fade-up">
-                <Row label="Layanan" value={`${tx.providerName} · ${tx.nominalLabel}`} />
-                <Row label="Nomor Tujuan" value={tx.destination} mono />
-                <Row label="Waktu" value={tx.createdAt} />
-                <Row label="Total Dibayar" value={rupiah(tx.totalPrice)} />
-
-                {tx.serialNumber && (
-                  <div className="flex items-center justify-between gap-3 pt-3 border-t border-stone-200">
-                    <span className="text-stone-500 shrink-0">Serial Number</span>
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-mono font-bold text-brand-navy text-[11px] truncate">
-                        {tx.serialNumber}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => copy(tx.serialNumber!, 'sn')}
-                        aria-label="Salin serial number"
-                        className="w-6 h-6 rounded-md text-stone-400 hover:text-brand-blue hover:bg-stone-200/60 flex items-center justify-center transition-colors cursor-pointer shrink-0"
-                      >
-                        {copied === 'sn' ? (
-                          <CheckIcon className="w-3.5 h-3.5 text-brand-green" />
-                        ) : (
-                          <CopyIcon className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {tx.tokenPln && (
-                <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 animate-fade-up">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-bold text-brand-blue uppercase">
-                      Token Listrik 20 Digit
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => copy(tx.tokenPln!.replace(/-/g, ''), 'token')}
-                      className="text-[11px] font-bold text-brand-blue hover:underline inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      {copied === 'token' ? 'Tersalin' : 'Salin'}
-                    </button>
-                  </div>
-                  <div className="font-mono text-sm font-black text-brand-navy tracking-wider text-center py-2 bg-white rounded-lg border border-blue-100">
-                    {tx.tokenPln}
-                  </div>
-                </div>
-              )}
-
-              <div className="space-y-2 pt-1 animate-fade-up">
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate(`/cek-pesanan?inv=${tx.invoiceNumber}&dest=${tx.destination}`)
-                  }
-                  className="w-full h-12 rounded-xl bg-brand-navy hover:bg-stone-800 text-white font-bold text-sm transition-all active:scale-[0.99] cursor-pointer"
-                >
-                  Lacak Status Pesanan
-                </button>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => copy(tx.invoiceNumber, 'inv')}
-                    className="flex-1 h-11 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition-colors cursor-pointer"
-                  >
-                    {copied === 'inv' ? 'Invoice Tersalin' : 'Salin Invoice'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onClose}
-                    className="flex-1 h-11 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs transition-colors cursor-pointer"
-                  >
-                    Transaksi Lagi
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>

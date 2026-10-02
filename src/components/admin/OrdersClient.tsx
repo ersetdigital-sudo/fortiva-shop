@@ -2,7 +2,16 @@
 
 import React, { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { deleteOrder, updateOrderDetails, updateOrderStatus } from '@/app/admin/(dashboard)/actions';
+import {
+  completeOrder,
+  deleteOrder,
+  processOrder,
+  rejectPayment,
+  updateOrderDetails,
+  updateOrderStatus,
+  verifyPayment,
+} from '@/app/admin/(dashboard)/actions';
+import { ORDER_STATUSES, STATUS_LABELS, normalizeOrderStatus } from '@/lib/order-status';
 import {
   EmptyState,
   StatusBadge,
@@ -31,10 +40,43 @@ export interface OrderRow {
   created_at: string;
 }
 
-const STATUS_FILTERS = ['ALL', 'PENDING', 'PROCESSING', 'SUCCESS', 'FAILED'] as const;
+const STATUS_FILTERS = ['ALL', ...ORDER_STATUSES] as const;
 type StatusFilter = (typeof STATUS_FILTERS)[number];
 
-const STATUS_OPTIONS = ['PENDING', 'PROCESSING', 'SUCCESS', 'FAILED'] as const;
+/**
+ * Alur normal (jangan dilompati):
+ * WAITING_VERIFICATION -> verifyPayment -> VERIFIED
+ * VERIFIED -> processOrder (terbitkan serial/token) -> PROCESSING
+ * PROCESSING -> completeOrder -> SUCCESS
+ * Kapan saja sebelum SUCCESS -> rejectPayment -> FAILED
+ */
+function nextAction(status: string):
+  | { label: string; run: (id: string) => Promise<{ ok: boolean; error?: string }>; tone: string }
+  | undefined {
+  switch (normalizeOrderStatus(status)) {
+    case 'WAITING_VERIFICATION':
+    case 'PENDING_PAYMENT':
+      return {
+        label: 'Verifikasi',
+        run: verifyPayment,
+        tone: 'bg-[#245BE8] hover:bg-[#1D49BB] text-white',
+      };
+    case 'VERIFIED':
+      return {
+        label: 'Proses',
+        run: processOrder,
+        tone: 'bg-[#111827] hover:bg-[#374151] text-white',
+      };
+    case 'PROCESSING':
+      return {
+        label: 'Selesai',
+        run: completeOrder,
+        tone: 'bg-[#16803C] hover:bg-emerald-700 text-white',
+      };
+    default:
+      return undefined;
+  }
+}
 
 export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
   const router = useRouter();
@@ -91,7 +133,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                 : 'border border-[#E5E3DC] bg-white text-[#374151] hover:border-[#111827]/25'
             }`}
           >
-            {status === 'ALL' ? 'Semua' : status}
+            {status === 'ALL' ? 'Semua' : STATUS_LABELS[status]}
             <span className="ml-1.5 opacity-60">{counts[status] ?? 0}</span>
           </button>
         ))}
@@ -172,22 +214,60 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
                           () =>
                             updateOrderStatus(
                               order.id,
-                              event.target.value as (typeof STATUS_OPTIONS)[number]
+                              normalizeOrderStatus(event.target.value)
                             ),
                           `Status ${order.invoice_number} diperbarui.`
                         )
                       }
-                      className={`${inputClass} w-36 py-1.5 text-[12px]`}
+                      className={`${inputClass} w-44 py-1.5 text-[12px]`}
                     >
-                      {STATUS_OPTIONS.map((status) => (
+                      {ORDER_STATUSES.map((status) => (
                         <option key={status} value={status}>
-                          {status}
+                          {STATUS_LABELS[status]}
                         </option>
                       ))}
                     </select>
                   </td>
                   <td className="px-5 py-3">
-                    <div className="flex justify-end gap-2">
+                    <div className="flex flex-wrap justify-end gap-2">
+                      {(() => {
+                        const action = nextAction(order.status);
+                        if (!action) return null;
+                        return (
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() =>
+                              run(
+                                () => action.run(order.id),
+                                `${order.invoice_number}: ${action.label.toLowerCase()} berhasil.`
+                              )
+                            }
+                            className={`rounded-xl px-3 py-1.5 text-[11px] font-semibold transition disabled:opacity-60 ${action.tone}`}
+                          >
+                            {action.label}
+                          </button>
+                        );
+                      })()}
+                      {normalizeOrderStatus(order.status) !== 'SUCCESS' &&
+                        normalizeOrderStatus(order.status) !== 'FAILED' && (
+                          <button
+                            type="button"
+                            disabled={isPending}
+                            onClick={() => {
+                              if (
+                                !confirm(
+                                  `Tolak pembayaran ${order.invoice_number}? Status jadi "Pembayaran Tidak Ditemukan".`
+                                )
+                              )
+                                return;
+                              run(() => rejectPayment(order.id), 'Laporan pembayaran ditolak.');
+                            }}
+                            className={btnDanger}
+                          >
+                            Tolak
+                          </button>
+                        )}
                       <button
                         type="button"
                         onClick={() => setEditing(order)}
