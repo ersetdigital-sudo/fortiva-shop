@@ -13,7 +13,7 @@ import {
   labelClass,
 } from './ui';
 import { IconBox, IconClose } from './icons';
-import { formatRupiah } from '@/lib/format';
+import { formatNumber, formatRupiah } from '@/lib/format';
 import { cldUrl } from '@/lib/cloudinary-url';
 
 export interface ProductRow {
@@ -67,6 +67,25 @@ function emptyForm(categorySlug: string): FormState {
     isActive: true,
   };
 }
+
+/** Ambil digit saja: "Rp 25.750" -> "25750". */
+const digitsOnly = (value: string): string => value.replace(/\D/g, '');
+
+/** Nilai dari DB -> string digit bulat: "25400.00" -> "25400". */
+const normalizePrice = (value: number | string | null | undefined): string => {
+  const numeric = typeof value === 'string' ? Number(value) : (value ?? 0);
+  if (!Number.isFinite(numeric)) return '';
+  return String(Math.round(numeric));
+};
+
+/** Tampilkan sebagai ribuan gaya Indonesia: "25750" -> "25.750". */
+const formatPriceInput = (value: string): string => {
+  const digits = digitsOnly(value);
+  if (!digits) return '';
+  // Buang nol di depan supaya "025750" tidak jadi "0.25750".
+  const normalized = digits.replace(/^0+(?=\d)/, '');
+  return formatNumber(normalized);
+};
 
 const BADGE_TONES: Record<string, 'red' | 'green' | 'yellow'> = {
   POPULER: 'red',
@@ -281,7 +300,7 @@ export function ProductsClient({
                             providerCode: product.provider_code ?? '',
                             label: product.label,
                             description: product.description,
-                            price: String(product.price),
+                            price: normalizePrice(product.price),
                             badge: (product.badge ?? '') as FormState['badge'],
                             imageUrl: product.image_url ?? '',
                             sortOrder: String(product.sort_order),
@@ -383,15 +402,37 @@ export function ProductsClient({
                 <label htmlFor="prod-price" className={labelClass}>
                   Harga Jual (Rp)
                 </label>
-                <input
-                  id="prod-price"
-                  type="number"
-                  min={0}
-                  value={form.price}
-                  onChange={(event) => setForm({ ...form, price: event.target.value })}
-                  placeholder="25750"
-                  className={`${inputClass} num-tabular`}
-                />
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] font-semibold text-[#6B7280]">
+                    Rp
+                  </span>
+                  <input
+                    id="prod-price"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={formatPriceInput(form.price)}
+                    onChange={(event) =>
+                      setForm({ ...form, price: digitsOnly(event.target.value) })
+                    }
+                    onPaste={(event) => {
+                      // Tempel nilai apa pun (mis. "Rp25.750") tetap jadi angka saja.
+                      event.preventDefault();
+                      const pasted = digitsOnly(event.clipboardData.getData('text'));
+                      setForm({
+                        ...form,
+                        price: digitsOnly(form.price + pasted),
+                      });
+                    }}
+                    placeholder="25.750"
+                    className={`${inputClass} num-tabular pl-9`}
+                  />
+                </div>
+                <p className="mt-1.5 text-[11px] text-[#6B7280]">
+                  {form.price
+                    ? `Rp${formatNumber(form.price)} · format ribuan otomatis`
+                    : 'Ketik angkanya saja, pemisah ribuan muncul otomatis.'}
+                </p>
               </div>
 
               <div className="sm:col-span-2">
