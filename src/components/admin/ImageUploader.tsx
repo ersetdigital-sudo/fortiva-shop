@@ -7,6 +7,7 @@ import {
   CLOUDINARY_MAX_BYTES,
   cldUrl,
 } from '@/lib/cloudinary-url';
+import { IconCheck, IconImage } from './icons';
 
 interface ImageUploaderProps {
   /** URL gambar saat ini (secure_url Cloudinary). */
@@ -233,9 +234,7 @@ export function ImageUploader({
             disabled={isUploading}
             className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-center"
           >
-            <span className="text-2xl" aria-hidden="true">
-              🖼️
-            </span>
+            <IconImage className="h-7 w-7 text-[#6B7280]" />
             <span className="text-[13px] font-semibold text-[#111827]">
               {isUploading ? 'Mengunggah…' : 'Pilih atau tarik gambar ke sini'}
             </span>
@@ -272,8 +271,9 @@ export function ImageUploader({
       )}
 
       {value && !isUploading && !error && (
-        <p className="mt-1.5 truncate text-[11px] text-[#16803C]">
-          ✓ Tersimpan · <span className="font-mono text-[10px] text-[#6B7280]">{value}</span>
+        <p className="mt-1.5 flex items-center gap-1 truncate text-[11px] text-[#16803C]">
+          <IconCheck className="h-3.5 w-3.5 shrink-0" /> Tersimpan ·{' '}
+          <span className="font-mono text-[10px] text-[#6B7280]">{value}</span>
         </p>
       )}
     </div>

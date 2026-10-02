@@ -13,6 +13,7 @@ import {
   inputClass,
   labelClass,
 } from './ui';
+import { IconBox, IconClose } from './icons';
 import { formatRupiah } from '@/lib/format';
 import { cldUrl } from '@/lib/cloudinary-url';
 
@@ -207,7 +208,7 @@ export function ProductsClient({
 
       {visible.length === 0 ? (
         <EmptyState
-          icon="📦"
+          icon={<IconBox className="h-5 w-5" />}
           title="Belum ada produk"
           description="Tambahkan nominal atau paket pertama untuk kategori ini."
         />
@@ -238,8 +239,8 @@ export function ProductsClient({
                           className="h-9 w-9 rounded-lg object-cover"
                         />
                       ) : (
-                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F7F6F2] text-[13px]">
-                          📦
+                        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#F7F6F2] text-[#6B7280]">
+                          <IconBox className="h-4 w-4" />
                         </span>
                       )}
                       <div>
@@ -319,10 +320,10 @@ export function ProductsClient({
               <button
                 type="button"
                 onClick={() => setForm(null)}
-                className="rounded-lg px-2 py-1 text-[16px] text-[#6B7280] hover:bg-[#F7F6F2]"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6B7280] transition hover:bg-[#F7F6F2] hover:text-[#111827]"
                 aria-label="Tutup"
               >
-                ✕
+                <IconClose className="h-4 w-4" />
               </button>
             </header>
 

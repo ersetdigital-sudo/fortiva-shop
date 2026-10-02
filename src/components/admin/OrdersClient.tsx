@@ -12,6 +12,7 @@ import {
   inputClass,
   labelClass,
 } from '@/components/admin/ui';
+import { IconClose, IconReceipt } from './icons';
 import { formatDateTime, formatRupiah } from '@/lib/format';
 
 export interface OrderRow {
@@ -118,7 +119,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: OrderRow[] }) {
 
       {visible.length === 0 ? (
         <EmptyState
-          icon="🧾"
+          icon={<IconReceipt className="h-5 w-5" />}
           title="Tidak ada pesanan"
           description="Belum ada pesanan yang cocok dengan filter ini."
         />
@@ -258,10 +259,10 @@ function OrderDetailModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-2 py-1 text-[16px] text-[#6B7280] hover:bg-[#F7F6F2]"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6B7280] transition hover:bg-[#F7F6F2] hover:text-[#111827]"
             aria-label="Tutup"
           >
-            ✕
+            <IconClose className="h-4 w-4" />
           </button>
         </header>
 

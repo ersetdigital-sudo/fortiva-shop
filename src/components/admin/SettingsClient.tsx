@@ -10,6 +10,7 @@ import {
 } from '@/app/admin/(dashboard)/actions';
 import { ImageUploader } from './ImageUploader';
 import { Badge, EmptyState, btnDanger, btnPrimary, btnSecondary, inputClass, labelClass } from './ui';
+import { IconBank, IconClose } from './icons';
 import { cldUrl } from '@/lib/cloudinary-url';
 
 export interface SettingRow {
@@ -224,7 +225,7 @@ export function SettingsClient({
 
         <div className="px-5 py-5">
           {initialBankAccounts.length === 0 ? (
-            <EmptyState icon="🏦" title="Belum ada rekening" />
+            <EmptyState icon={<IconBank className="h-5 w-5" />} title="Belum ada rekening" />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[680px] border-collapse text-left">
@@ -251,8 +252,8 @@ export function SettingsClient({
                               className="h-7 w-7 rounded-md object-contain"
                             />
                           ) : (
-                            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#F7F6F2] text-[12px]">
-                              🏦
+                            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-[#F7F6F2] text-[#6B7280]">
+                              <IconBank className="h-3.5 w-3.5" />
                             </span>
                           )}
                           <span className="text-[12px] font-semibold text-[#111827]">
@@ -320,10 +321,10 @@ export function SettingsClient({
               <button
                 type="button"
                 onClick={() => setBankForm(null)}
-                className="rounded-lg px-2 py-1 text-[16px] text-[#6B7280] hover:bg-[#F7F6F2]"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6B7280] transition hover:bg-[#F7F6F2] hover:text-[#111827]"
                 aria-label="Tutup"
               >
-                ✕
+                <IconClose className="h-4 w-4" />
               </button>
             </header>
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { IconInbox } from './icons';
 
 /* ------------------------------------------------------------------ *
  * Kelas utilitas bersama
@@ -116,15 +117,18 @@ export function StatusBadge({ status }: { status: string }) {
 export function EmptyState({
   title,
   description,
-  icon = '📭',
+  icon = <IconInbox className="h-7 w-7" />,
 }: {
   title: string;
   description?: string;
-  icon?: string;
+  icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-dashed border-[#E5E3DC] bg-[#F7F6F2] px-6 py-12 text-center">
-      <span className="text-3xl" aria-hidden="true">
+    <div className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-[#E5E3DC] bg-[#F7F6F2] px-6 py-12 text-center">
+      <span
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#6B7280] ring-1 ring-[#E5E3DC]"
+        aria-hidden="true"
+      >
         {icon}
       </span>
       <p className="text-[14px] font-bold text-[#111827]">{title}</p>

@@ -20,6 +20,7 @@ import {
   inputClass,
   labelClass,
 } from './ui';
+import { IconBroadcast, IconClose, IconFolder } from './icons';
 
 export interface CategoryRow {
   id: string;
@@ -214,7 +215,7 @@ export function CategoriesClient({
 
       {tab === 'kategori' ? (
         initialCategories.length === 0 ? (
-          <EmptyState icon="🗂️" title="Belum ada kategori" />
+          <EmptyState icon={<IconFolder className="h-5 w-5" />} title="Belum ada kategori" />
         ) : (
           <div className="overflow-x-auto rounded-2xl border border-[#E5E3DC] bg-white shadow-sm">
             <table className="w-full min-w-[760px] border-collapse text-left">
@@ -290,7 +291,7 @@ export function CategoriesClient({
           </div>
         )
       ) : initialProviders.length === 0 ? (
-        <EmptyState icon="📡" title="Belum ada provider" />
+        <EmptyState icon={<IconBroadcast className="h-5 w-5" />} title="Belum ada provider" />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-[#E5E3DC] bg-white shadow-sm">
           <table className="w-full min-w-[820px] border-collapse text-left">
@@ -387,10 +388,10 @@ export function CategoriesClient({
               <button
                 type="button"
                 onClick={() => setCategoryForm(null)}
-                className="rounded-lg px-2 py-1 text-[16px] text-[#6B7280] hover:bg-[#F7F6F2]"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6B7280] transition hover:bg-[#F7F6F2] hover:text-[#111827]"
                 aria-label="Tutup"
               >
-                ✕
+                <IconClose className="h-4 w-4" />
               </button>
             </header>
 
@@ -545,10 +546,10 @@ export function CategoriesClient({
               <button
                 type="button"
                 onClick={() => setProviderForm(null)}
-                className="rounded-lg px-2 py-1 text-[16px] text-[#6B7280] hover:bg-[#F7F6F2]"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#6B7280] transition hover:bg-[#F7F6F2] hover:text-[#111827]"
                 aria-label="Tutup"
               >
-                ✕
+                <IconClose className="h-4 w-4" />
               </button>
             </header>
 

@@ -3,13 +3,23 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  IconBolt,
+  IconBox,
+  IconClose,
+  IconFolder,
+  IconMenu,
+  IconOverview,
+  IconReceipt,
+  IconSettings,
+} from './icons';
 
-const NAV_ITEMS = [
-  { href: '/admin', label: 'Ringkasan', icon: '📊' },
-  { href: '/admin/pesanan', label: 'Pesanan', icon: '🧾' },
-  { href: '/admin/produk', label: 'Produk & Nominal', icon: '📦' },
-  { href: '/admin/kategori', label: 'Kategori & Provider', icon: '🗂️' },
-  { href: '/admin/pengaturan', label: 'Pengaturan', icon: '⚙️' },
+const NAV_ITEMS: { href: string; label: string; Icon: React.FC<{ className?: string }> }[] = [
+  { href: '/admin', label: 'Ringkasan', Icon: IconOverview },
+  { href: '/admin/pesanan', label: 'Pesanan', Icon: IconReceipt },
+  { href: '/admin/produk', label: 'Produk & Nominal', Icon: IconBox },
+  { href: '/admin/kategori', label: 'Kategori & Provider', Icon: IconFolder },
+  { href: '/admin/pengaturan', label: 'Pengaturan', Icon: IconSettings },
 ];
 
 export function AdminSidebar() {
@@ -21,12 +31,12 @@ export function AdminSidebar() {
 
   const nav = (
     <nav className="flex flex-col gap-1">
-      {NAV_ITEMS.map((item) => {
-        const active = isActive(item.href);
+      {NAV_ITEMS.map(({ href, label, Icon }) => {
+        const active = isActive(href);
         return (
           <Link
-            key={item.href}
-            href={item.href}
+            key={href}
+            href={href}
             onClick={() => setOpen(false)}
             className={`flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-[13px] font-semibold transition ${
               active
@@ -34,10 +44,8 @@ export function AdminSidebar() {
                 : 'text-white/65 hover:bg-white/10 hover:text-white'
             }`}
           >
-            <span className="text-base" aria-hidden="true">
-              {item.icon}
-            </span>
-            {item.label}
+            <Icon className="h-[18px] w-[18px] shrink-0" />
+            {label}
           </Link>
         );
       })}
@@ -53,9 +61,7 @@ export function AdminSidebar() {
         className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-[#111827] text-white shadow-lg lg:hidden"
         aria-label="Buka menu admin"
       >
-        <span className="text-lg" aria-hidden="true">
-          {open ? '✕' : '☰'}
-        </span>
+        {open ? <IconClose className="h-5 w-5" /> : <IconMenu className="h-5 w-5" />}
       </button>
 
       {/* Sidebar desktop */}
@@ -87,8 +93,8 @@ export function AdminSidebar() {
 function SidebarBrand() {
   return (
     <div className="flex items-center gap-2.5 px-1.5">
-      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F2352B] text-lg text-white">
-        ⚡
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#F2352B] text-white">
+        <IconBolt className="h-[18px] w-[18px]" />
       </span>
       <span className="text-[15px] font-extrabold tracking-[-0.01em] text-white">
         Fortiva<span className="text-[#F2352B]">Admin</span>

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { createAdminClient } from '@/lib/supabase/server';
 import { Card, EmptyState, PageHeader, StatCard, StatusBadge, Badge } from '@/components/admin/ui';
+import { IconReceipt } from '@/components/admin/icons';
 import { formatDateTime, formatNumber, formatRupiah } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
@@ -175,7 +176,7 @@ export default async function AdminOverviewPage() {
           {orders.length === 0 ? (
             <div className="p-5">
               <EmptyState
-                icon="🧾"
+                icon={<IconReceipt className="h-5 w-5" />}
                 title="Belum ada pesanan"
                 description="Pesanan dari halaman checkout akan muncul di sini secara otomatis."
               />
